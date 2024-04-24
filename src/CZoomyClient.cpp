@@ -30,7 +30,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #elif defined(__APPLE__)
     // GL 3.2 Core + GLSL 150
-    const char* glsl_version = "#version 150";
+    const char *glsl_version = "#version 150";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -57,7 +57,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
 
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |=
+            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
 //    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigDockingTransparentPayload = true;
 
@@ -75,6 +76,29 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     ImGui_ImplSDL2_InitForOpenGL(_window->get_native_window(), _window->get_native_context());
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    // OpenCV init
+
+    /**
+     * camera selection
+     * facetime hd camera:
+     * _video_capture.open(0);
+     * continuity:
+     * _video_capture.open(2);
+     * raspberry pi:
+     * _video_capture = cv::VideoCapture("libcamerasrc ! video/x-raw, width=128, height=96 ! appsink", cv::CAP_GSTREAMER);
+     */
+
+//    _video_capture = cv::VideoCapture("libcamerasrc ! video/x-raw, width=128, height=96 ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture.open(0);
+    _video_capture.open(2);
+    if (!_video_capture.isOpened()) {
+        spdlog::error("Could not open cv");
+        exit(-1);
+    } else {
+        spdlog::info("Camera opened with backend " + _video_capture.getBackendName());
+        _video_capture.read(_img);
+    }
+
     // preallocate texture handle
 
     glGenTextures(1, &_tex);
@@ -84,7 +108,18 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    spdlog::info("Client update");
+//    spdlog::info("Client update");
+    _lockout.lock();
+    _video_capture.read(_img);
+    if (!_img.empty()) {
+        _detector_params = cv::aruco::DetectorParameters();
+        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+        _detector.setDetectorParameters(_detector_params);
+        _detector.setDictionary(_dictionary);
+        _detector.detectMarkers(_img, _marker_corners, _marker_ids, _rejected_candidates);
+    }
+    if (!_img.empty()) cv::aruco::drawDetectedMarkers(_img, _marker_corners, _marker_ids);
+    _lockout.unlock();
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(10));
 }
 
@@ -112,6 +147,42 @@ void CZoomyClient::draw() {
 
     ImGui::DockSpaceOverViewport();
 
+    ImGui::Begin("OpenCV", p_open);
+
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+    float ratio = ((float) _img.cols) / ((float) _img.rows);
+    float viewport_ratio = viewport_size.x / viewport_size.y;
+
+    _lockout.lock();
+    mat_to_tex(_img, _tex);
+    _lockout.unlock();
+
+    // Scale the image horizontally if the content region is wider than the image
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(imageWidth, viewport_size.y));
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(viewport_size.x, imageHeight));
+    }
+    ImGui::BeginGroup();
+    ImGui::Button("Connect to AVFoundation");
+    ImGui::SameLine();
+    ImGui::Button("Connect to GStreamer");
+    ImGui::EndGroup();
+    ImGui::End();
+
+    ImGui::Begin("OpenCV Details", p_open);
+    ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::End();
+
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::End();
@@ -134,28 +205,29 @@ void CZoomyClient::draw() {
     SDL_GL_SwapWindow(_window->get_native_window());
 
     // limit to 1000 FPS
-    while ((int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
+    while ((int) std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
 }
 
 void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     cv::Mat flipped;
     // might crash here if input array is somehow emptied
-    cv::cvtColor(input,flipped,cv::COLOR_BGR2RGB);
+    cv::cvtColor(input, flipped, cv::COLOR_BGR2RGB);
 
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                    GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Same
 
     glBindTexture(GL_TEXTURE_2D, output);
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,input.cols,input.rows,0,GL_RGB,GL_UNSIGNED_BYTE,flipped.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
 
 int main() {
-//    std::cout << "Hello, World!" << std::endl;
-    CZoomyClient c = CZoomyClient(cv::Size(854,480));
+    CZoomyClient c = CZoomyClient(cv::Size(854, 480));
     c.run();
     return 0;
 }

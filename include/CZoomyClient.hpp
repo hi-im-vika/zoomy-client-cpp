@@ -22,6 +22,7 @@
 #endif
 
 #include <CUDPClient.hpp>
+#include <opencv2/objdetect/aruco_detector.hpp>
 
 #include "CWindow.hpp"
 #include "CCommonBase.hpp"
@@ -36,8 +37,17 @@ private:
     cv::Mat _opencv_area;
     cv::Mat _img, _raw_img;
     SDL_Event _evt;
-
     std::mutex _lockout;
+
+    // opencv
+    cv::VideoCapture _video_capture;
+
+    // opencv aruco
+    std::vector<int> _marker_ids;
+    std::vector<std::vector<cv::Point2f>> _marker_corners, _rejected_candidates;
+    cv::aruco::DetectorParameters _detector_params;
+    cv::aruco::Dictionary _dictionary;
+    cv::aruco::ArucoDetector _detector;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
 public:
