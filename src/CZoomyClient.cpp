@@ -6,6 +6,9 @@
 
 #include "../include/CZoomyClient.hpp"
 
+#define PING_TIMEOUT 1000
+#define NET_DELAY 10
+
 CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
 
@@ -92,7 +95,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 //    _video_capture.open(0);
     _video_capture.open(2);
     if (!_video_capture.isOpened()) {
-        spdlog::error("Could not open cv");
+        spdlog::error("Could not open camera.");
         exit(-1);
     } else {
         spdlog::info("Camera opened with backend " + _video_capture.getBackendName());
