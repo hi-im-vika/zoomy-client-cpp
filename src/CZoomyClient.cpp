@@ -147,6 +147,15 @@ void CZoomyClient::draw() {
 
     ImGui::DockSpaceOverViewport();
 
+    ImGui::Begin("Connect", p_open);
+    ImGui::Text("Host:");
+    ImGui::SameLine();
+    ImGui::InputText("###host_input", _host.data(), _host.capacity());
+    ImGui::Text("Port:");
+    ImGui::SameLine();
+    ImGui::InputText("###port_input", _port.data(), _port.capacity());
+    ImGui::End();
+
     ImGui::Begin("OpenCV", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/

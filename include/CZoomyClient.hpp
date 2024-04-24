@@ -49,6 +49,10 @@ private:
     cv::aruco::Dictionary _dictionary;
     cv::aruco::ArucoDetector _detector;
 
+    // net
+    std::string _host;
+    std::string _port;
+
     void mat_to_tex(cv::Mat &input, GLuint &output);
 public:
     CZoomyClient(cv::Size s);
