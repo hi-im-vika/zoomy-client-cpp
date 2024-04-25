@@ -7,8 +7,6 @@
 #pragma once
 
 #include <iostream>
-
-#include <iostream>
 #include <imgui.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -22,6 +20,7 @@
 #endif
 
 #include <CUDPClient.hpp>
+#include <opencv2/objdetect/aruco_detector.hpp>
 
 #include "CWindow.hpp"
 #include "CCommonBase.hpp"
@@ -36,14 +35,42 @@ private:
     cv::Mat _opencv_area;
     cv::Mat _img, _raw_img;
     SDL_Event _evt;
-
     std::mutex _lockout;
 
+    // opencv
+    cv::VideoCapture _video_capture;
+
+    // opencv aruco
+    std::vector<int> _marker_ids;
+    std::vector<std::vector<cv::Point2f>> _marker_corners, _rejected_candidates;
+    cv::aruco::DetectorParameters _detector_params;
+    cv::aruco::Dictionary _dictionary;
+    cv::aruco::ArucoDetector _detector;
+
+    // net
+    std::string _host;
+    std::string _port;
+    CUDPClient _client;
+    std::thread _thread_tx, _thread_rx;
+    std::chrono::steady_clock::time_point _timeout_count;
+    int _time_since_start;
+    std::queue<std::vector<uint8_t>> _tx_queue, _rx_queue;
+    std::vector<uint8_t> _rx_buf;
+    long _rx_bytes;
+    bool _send_data;
+
     void mat_to_tex(cv::Mat &input, GLuint &output);
+
+    void rx();
+    void tx();
+
 public:
-    CZoomyClient(cv::Size s);
+    CZoomyClient(cv::Size s, std::string host, std::string port);
     ~CZoomyClient();
 
     void update() override;
     void draw() override;
+
+    static void thread_rx(CZoomyClient *who_called);
+    static void thread_tx(CZoomyClient *who_called);
 };
