@@ -7,9 +7,9 @@
 #include "../include/CZoomyClient.hpp"
 
 #define PING_TIMEOUT 1000
-#define NET_DELAY 10
+#define NET_DELAY 35
 
-CZoomyClient::CZoomyClient(cv::Size s) {
+CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _window_size = s;
 
     // SDL init
@@ -81,49 +81,77 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     // OpenCV init
 
-    /**
-     * camera selection
-     * facetime hd camera:
-     * _video_capture.open(0);
-     * continuity:
-     * _video_capture.open(2);
-     * raspberry pi:
-     * _video_capture = cv::VideoCapture("libcamerasrc ! video/x-raw, width=128, height=96 ! appsink", cv::CAP_GSTREAMER);
-     */
-
-//    _video_capture = cv::VideoCapture("libcamerasrc ! video/x-raw, width=128, height=96 ! appsink", cv::CAP_GSTREAMER);
-//    _video_capture.open(0);
-    _video_capture.open(2);
-    if (!_video_capture.isOpened()) {
-        spdlog::error("Could not open camera.");
-        exit(-1);
-    } else {
-        spdlog::info("Camera opened with backend " + _video_capture.getBackendName());
-        _video_capture.read(_img);
-    }
+    _img = cv::Mat::ones(cv::Size(20,20),CV_8UC3);
 
     // preallocate texture handle
 
     glGenTextures(1, &_tex);
     glGenTextures(1, &_another_tex);
+
+    // net init
+
+    _host = host;
+    _port = port;
+    _client.setup(_host,_port);
+
+    _timeout_count = std::chrono::steady_clock::now();
+    _send_data = _client.get_socket_status();
+
+    // start listen thread
+    _thread_rx = std::thread(thread_rx, this);
+    _thread_rx.detach();
+
+    // start send thread
+    _thread_tx = std::thread(thread_tx, this);
+    _thread_tx.detach();
 }
 
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-//    spdlog::info("Client update");
-    _lockout.lock();
-    _video_capture.read(_img);
-    if (!_img.empty()) {
-        _detector_params = cv::aruco::DetectorParameters();
-        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-        _detector.setDetectorParameters(_detector_params);
-        _detector.setDictionary(_dictionary);
-        _detector.detectMarkers(_img, _marker_corners, _marker_ids, _rejected_candidates);
+    cv::Mat raw_img;
+    for (; !_rx_queue.empty(); _rx_queue.pop()) {
+
+//            // acknowledge next data in queue
+        spdlog::info("New in RX queue with size: " + std::to_string(_rx_queue.front().size()));
+        std::vector<uint8_t> temporary(_rx_queue.front().begin() + 4,_rx_queue.front().end());
+        cv::imdecode(temporary, cv::IMREAD_COLOR, &raw_img);
+
+        _lockout.lock();
+
+        if (!raw_img.empty()) {
+            _detector_params = cv::aruco::DetectorParameters();
+            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+            _detector.setDetectorParameters(_detector_params);
+            _detector.setDictionary(_dictionary);
+            _detector.detectMarkers(raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+        }
+        if (!raw_img.empty()) cv::aruco::drawDetectedMarkers(raw_img, _marker_corners, _marker_ids);
+        _img = raw_img;
+
+        _lockout.unlock();
+
+        // reset timeout
+        // placement of this may be a source of future bug
+        _timeout_count = std::chrono::steady_clock::now();
     }
-    if (!_img.empty()) cv::aruco::drawDetectedMarkers(_img, _marker_corners, _marker_ids);
-    _lockout.unlock();
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(10));
+
+    _time_since_start = (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _timeout_count).count();
+    if (_time_since_start > PING_TIMEOUT) {
+        spdlog::warn("Server is gone...");
+        _send_data = false;
+        do {
+            _client.setdn();
+            _client.setup(_host, _port);
+        } while (!_client.get_socket_status());
+        _send_data = _client.get_socket_status();
+        _timeout_count = std::chrono::steady_clock::now();
+    }
+
+    std::string payload = "asdf";
+    _tx_queue.emplace(payload.begin(), payload.end());
+    spdlog::info("Last response time (ms): " + std::to_string(_client.get_last_response_time()));
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
 }
 
 void CZoomyClient::draw() {
@@ -219,6 +247,36 @@ void CZoomyClient::draw() {
     // limit to 1000 FPS
     while ((int) std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
+}
+
+void CZoomyClient::rx() {
+    _rx_bytes = 0;
+    _rx_buf.clear();
+    _client.do_rx(_rx_buf, _rx_bytes);
+    std::vector<uint8_t> temp(_rx_buf.begin(),_rx_buf.begin() + _rx_bytes);
+    // only add to rx queue if data is not empty
+    if(!temp.empty()) _rx_queue.emplace(temp);
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
+}
+
+void CZoomyClient::tx() {
+    for (; !_tx_queue.empty(); _tx_queue.pop()) {
+//            spdlog::info("Sending");
+        _client.do_tx(_tx_queue.front());
+    }
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+}
+
+void CZoomyClient::thread_rx(CZoomyClient *who_called) {
+    while (!who_called->_do_exit) {
+        who_called->rx();
+    }
+}
+
+void CZoomyClient::thread_tx(CZoomyClient *who_called) {
+    while (!who_called->_do_exit) {
+        who_called->tx();
+    }
 }
 
 void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {

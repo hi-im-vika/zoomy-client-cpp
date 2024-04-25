@@ -7,8 +7,6 @@
 #pragma once
 
 #include <iostream>
-
-#include <iostream>
 #include <imgui.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -52,12 +50,27 @@ private:
     // net
     std::string _host;
     std::string _port;
+    CUDPClient _client;
+    std::thread _thread_tx, _thread_rx;
+    std::chrono::steady_clock::time_point _timeout_count;
+    int _time_since_start;
+    std::queue<std::vector<uint8_t>> _tx_queue, _rx_queue;
+    std::vector<uint8_t> _rx_buf;
+    long _rx_bytes;
+    bool _send_data;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
+
+    void rx();
+    void tx();
+
 public:
-    CZoomyClient(cv::Size s);
+    CZoomyClient(cv::Size s, std::string host, std::string port);
     ~CZoomyClient();
 
     void update() override;
     void draw() override;
+
+    static void thread_rx(CZoomyClient *who_called);
+    static void thread_tx(CZoomyClient *who_called);
 };
