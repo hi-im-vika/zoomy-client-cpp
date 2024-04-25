@@ -238,8 +238,13 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
 
-int main() {
-    CZoomyClient c = CZoomyClient(cv::Size(854, 480));
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        std::cerr << "Usage: client <host> <port>" << std::endl;
+        return 1;
+    }
+
+    CZoomyClient c = CZoomyClient(cv::Size(854, 480), argv[1], argv[2]);
     c.run();
     return 0;
 }
