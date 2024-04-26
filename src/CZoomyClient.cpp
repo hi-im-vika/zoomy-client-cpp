@@ -201,7 +201,6 @@ void CZoomyClient::draw() {
 
     _lockout.lock();
     mat_to_tex(_img, _tex);
-    _lockout.unlock();
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
@@ -217,6 +216,8 @@ void CZoomyClient::draw() {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
         ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(viewport_size.x, imageHeight));
     }
+
+    _lockout.unlock();
     ImGui::BeginGroup();
     ImGui::Button("Connect to AVFoundation");
     ImGui::SameLine();
