@@ -25,11 +25,15 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     // control init
 
     int joysticks = SDL_NumJoysticks();
-    for (int i = 0; i < joysticks; i++) {
-        if (SDL_IsGameController(i)) {
-            _gc = SDL_GameControllerOpen(i);
-            ss << "Game controller " << i << " opened";
-            spdlog::info(ss.str());
+    if (!joysticks) {
+        spdlog::warn("No controllers detected.");
+    } else {
+        for (int i = 0; i < joysticks; i++) {
+            if (SDL_IsGameController(i)) {
+                _gc = SDL_GameControllerOpen(i);
+                ss << "Game controller " << i << " opened.";
+                spdlog::info(ss.str());
+            }
         }
     }
 
