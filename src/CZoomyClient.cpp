@@ -22,6 +22,8 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     std::stringstream ss;
 
+    // control init
+
     int joysticks = SDL_NumJoysticks();
     for (int i = 0; i < joysticks; i++) {
         if (SDL_IsGameController(i)) {
@@ -30,6 +32,9 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
             spdlog::info(ss.str());
         }
     }
+
+    _steering_trim = _throttle_trim = 0;
+    _values = {0, 0, 0, 0, 0, 0, 0 ,0};
 
     // dear imgui init
     // Decide GL+GLSL versions

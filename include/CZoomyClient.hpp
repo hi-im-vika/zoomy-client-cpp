@@ -26,6 +26,17 @@
 #include "CCommonBase.hpp"
 #include "CDPIHandler.hpp"
 
+enum value_type {
+    GC_LEFTX,
+    GC_LEFTY,
+    GC_RIGHTX,
+    GC_RIGHTY,
+    GC_A,
+    GC_B,
+    GC_X,
+    GC_Y,
+};
+
 class CZoomyClient : public CCommonBase {
 private:
     // imgui
@@ -35,8 +46,14 @@ private:
     cv::Mat _opencv_area;
     cv::Mat _img, _raw_img;
     SDL_Event _evt;
-    SDL_GameController *_gc;
     std::mutex _lockout;
+
+    // control
+    std::vector<int> _values;
+    SDL_GameController *_gc;
+    bool _do_invert_steering;
+    int _steering_trim;
+    int _throttle_trim;
 
     // opencv
     cv::VideoCapture _video_capture;
