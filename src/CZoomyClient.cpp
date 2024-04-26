@@ -13,7 +13,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _window_size = s;
 
     // SDL init
-    uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER;
+    uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
 
     if (SDL_Init(init_flags) != 0) {
         spdlog::error("Error during SDL init");
