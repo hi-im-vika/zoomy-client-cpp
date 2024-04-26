@@ -79,6 +79,7 @@ private:
     bool _send_data;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
+    int normalize_with_trim(int i, int trim);
 
     void rx();
     void tx();

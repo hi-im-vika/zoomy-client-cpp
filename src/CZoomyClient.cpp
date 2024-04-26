@@ -318,6 +318,17 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
 
+int CZoomyClient::normalize_with_trim(int i, int trim) {
+    int mult = i > 0 ? 1 : -1;
+    int locked_range = 32767 - trim;
+    int raw = i - trim;
+    if ((locked_range - abs(raw)) < 0) {
+        return (mult * locked_range) + trim;
+    } else {
+        return i;
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: client <host> <port>" << std::endl;
