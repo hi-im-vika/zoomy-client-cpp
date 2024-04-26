@@ -93,4 +93,5 @@ public:
 
     static void thread_rx(CZoomyClient *who_called);
     static void thread_tx(CZoomyClient *who_called);
+
 };
