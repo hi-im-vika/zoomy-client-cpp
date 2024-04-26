@@ -183,6 +183,23 @@ void CZoomyClient::draw() {
                 spdlog::info("Quit");
                 _do_exit = true;
                 break;
+            case SDL_CONTROLLERBUTTONDOWN:
+            case SDL_CONTROLLERBUTTONUP:
+                _values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
+                _values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
+                _values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
+                _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
+                break;
+            case SDL_CONTROLLERAXISMOTION:
+                if (_do_invert_steering) {
+                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim) * -1, _steering_trim);
+                } else {
+                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim), _steering_trim);
+                }
+                _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
+                _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
+                _values.at(value_type::GC_RIGHTY) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY) + _throttle_trim), _throttle_trim);
+                break;
             default:
                 break;
         }
