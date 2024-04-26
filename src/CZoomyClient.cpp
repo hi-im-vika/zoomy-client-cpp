@@ -167,6 +167,11 @@ void CZoomyClient::update() {
         _timeout_count = std::chrono::steady_clock::now();
     }
 
+//    std::string payload;
+//    for(auto &i : _values) {
+//        payload += std::to_string(i) + " ";
+//    }
+
     std::string payload = "asdf";
     _tx_queue.emplace(payload.begin(), payload.end());
     spdlog::info("Last response time (ms): " + std::to_string(_client.get_last_response_time()));
