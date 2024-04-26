@@ -39,6 +39,7 @@ private:
 
     // opencv
     cv::VideoCapture _video_capture;
+    bool _flip_image;
 
     // opencv aruco
     std::vector<int> _marker_ids;

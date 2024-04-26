@@ -82,6 +82,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     // OpenCV init
 
     _img = cv::Mat::ones(cv::Size(20,20),CV_8UC3);
+    _flip_image = false;
 
     // preallocate texture handle
 
@@ -118,6 +119,10 @@ void CZoomyClient::update() {
         cv::imdecode(temporary, cv::IMREAD_COLOR, &raw_img);
 
         _lockout.lock();
+
+        if (_flip_image) {
+            cv::rotate(raw_img,raw_img,cv::ROTATE_180);
+        }
 
         if (!raw_img.empty()) {
             _detector_params = cv::aruco::DetectorParameters();
@@ -216,6 +221,8 @@ void CZoomyClient::draw() {
     ImGui::Button("Connect to AVFoundation");
     ImGui::SameLine();
     ImGui::Button("Connect to GStreamer");
+    ImGui::SameLine();
+    ImGui::Checkbox("Rotate 180",&_flip_image);
     ImGui::EndGroup();
     ImGui::End();
 
