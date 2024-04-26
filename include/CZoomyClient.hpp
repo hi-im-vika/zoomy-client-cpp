@@ -35,6 +35,7 @@ private:
     cv::Mat _opencv_area;
     cv::Mat _img, _raw_img;
     SDL_Event _evt;
+    SDL_GameController *_gc;
     std::mutex _lockout;
 
     // opencv

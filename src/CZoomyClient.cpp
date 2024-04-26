@@ -22,6 +22,15 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     std::stringstream ss;
 
+    int joysticks = SDL_NumJoysticks();
+    for (int i = 0; i < joysticks; i++) {
+        if (SDL_IsGameController(i)) {
+            _gc = SDL_GameControllerOpen(i);
+            ss << "Game controller " << i << " opened";
+            spdlog::info(ss.str());
+        }
+    }
+
     // dear imgui init
     // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
