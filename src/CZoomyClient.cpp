@@ -108,6 +108,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     glGenTextures(1, &_another_tex);
 
     // net init
+    // TODO: thread network update separately from
 
     _host = host;
     _port = port;
