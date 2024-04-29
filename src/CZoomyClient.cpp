@@ -172,12 +172,12 @@ void CZoomyClient::update() {
         _timeout_count = std::chrono::steady_clock::now();
     }
 
-//    std::string payload;
-//    for(auto &i : _values) {
-//        payload += std::to_string(i) + " ";
-//    }
+    std::string payload;
+    for(auto &i : _values) {
+        payload += std::to_string(i) + " ";
+    }
 
-    std::string payload = "asdf";
+//    std::string payload = "asdf";
     _tx_queue.emplace(payload.begin(), payload.end());
     spdlog::info("Last response time (ms): " + std::to_string(_client.get_last_response_time()));
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
@@ -231,6 +231,11 @@ void CZoomyClient::draw() {
     ImGui::Text("Port:");
     ImGui::SameLine();
     ImGui::InputText("###port_input", _port.data(), _port.capacity());
+    std::stringstream ss;
+    for (auto &i : _values) {
+        ss << i << " ";
+    }
+    ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
     ImGui::End();
 
     ImGui::Begin("OpenCV", p_open);
@@ -274,6 +279,7 @@ void CZoomyClient::draw() {
 
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
+
     ImGui::End();
 
     ImGui::Render();
@@ -310,7 +316,7 @@ void CZoomyClient::rx() {
 
 void CZoomyClient::tx() {
     for (; !_tx_queue.empty(); _tx_queue.pop()) {
-//            spdlog::info("Sending");
+//        spdlog::info("Sending" + std::string(_tx_queue.front().begin(), _tx_queue.front().end()));
         _client.do_tx(_tx_queue.front());
     }
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
