@@ -309,8 +309,8 @@ void CZoomyClient::rx() {
     _rx_buf.clear();
     _client.do_rx(_rx_buf, _rx_bytes);
     std::vector<uint8_t> temp(_rx_buf.begin(),_rx_buf.begin() + _rx_bytes);
-    // only add to rx queue if data is not empty
-    if(!temp.empty()) _rx_queue.emplace(temp);
+    // only add to rx queue if data is not empty and not ping response
+    if(!temp.empty() && (temp.front() != '\6')) _rx_queue.emplace(temp);
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
 }
 
