@@ -143,14 +143,14 @@ void CZoomyClient::update() {
             cv::rotate(raw_img,raw_img,cv::ROTATE_180);
         }
 
-        if (!raw_img.empty()) {
-            _detector_params = cv::aruco::DetectorParameters();
-            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-            _detector.setDetectorParameters(_detector_params);
-            _detector.setDictionary(_dictionary);
-            _detector.detectMarkers(raw_img, _marker_corners, _marker_ids, _rejected_candidates);
-        }
-        if (!raw_img.empty()) cv::aruco::drawDetectedMarkers(raw_img, _marker_corners, _marker_ids);
+//        if (!raw_img.empty()) {
+//            _detector_params = cv::aruco::DetectorParameters();
+//            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+//            _detector.setDetectorParameters(_detector_params);
+//            _detector.setDictionary(_dictionary);
+//            _detector.detectMarkers(raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+//        }
+//        if (!raw_img.empty()) cv::aruco::drawDetectedMarkers(raw_img, _marker_corners, _marker_ids);
         _img = raw_img;
 
         _lockout.unlock();
