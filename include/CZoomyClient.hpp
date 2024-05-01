@@ -31,6 +31,8 @@ enum value_type {
     GC_LEFTY,
     GC_RIGHTX,
     GC_RIGHTY,
+    GC_LTRIG,
+    GC_RTRIG,
     GC_A,
     GC_B,
     GC_X,

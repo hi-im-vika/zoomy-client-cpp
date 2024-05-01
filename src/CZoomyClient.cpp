@@ -38,7 +38,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     }
 
     _steering_trim = _throttle_trim = 0;
-    _values = {0, 0, 0, 0, 0, 0, 0 ,0};
+    _values = {0, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
 
     // dear imgui init
     // Decide GL+GLSL versions
@@ -209,6 +209,8 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
                 _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
                 _values.at(value_type::GC_RIGHTY) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY) + _throttle_trim), _throttle_trim);
+                _values.at(value_type::GC_LTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+                _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
                 break;
             default:
                 break;
