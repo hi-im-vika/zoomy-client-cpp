@@ -30,5 +30,7 @@ add_executable(zoomy-client
         include/CWindow.hpp
         src/CDPIHandler.cpp
         include/CDPIHandler.hpp
+        src/CAutoController.cpp
+        include/CAutoController.hpp
 )
 target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-udp)
