@@ -5,22 +5,9 @@
 #include "thread"
 #include "vector"
 
-enum valueType {
-    GC_LEFTX,
-    GC_LEFTY,
-    GC_RIGHTX,
-    GC_RIGHTY,
-    GC_LTRIG,
-    GC_RTRIG,
-    GC_A,
-    GC_B,
-    GC_X,
-    GC_Y,
-};
-
 class CAutoController {
 private:
-    cv::Mat *_carImg, *overheadImg;
+    cv::Mat *_carImg, *_overheadImg;
 
     std::vector<int> _autoInput;
 
@@ -35,6 +22,19 @@ private:
     void runToPoint();
 
 public:
+    enum valueType {
+        GC_LEFTX,
+        GC_LEFTY,
+        GC_RIGHTX,
+        GC_RIGHTY,
+        GC_LTRIG,
+        GC_RTRIG,
+        GC_A,
+        GC_B,
+        GC_X,
+        GC_Y,
+    };
+
     CAutoController();
 
     ~CAutoController();

@@ -6,11 +6,11 @@
 CAutoController::CAutoController() = default;
 
 CAutoController::~CAutoController() {
-    _threadExit = true;
+    _threadExit = std::vector<bool>(2,true);
 }
 
-bool CAutoController::InitCAutoController(cv::Mat *car, cv::Mat *above) {
-    _carImg = img;
+bool CAutoController::CAutoControllerInit(cv::Mat *car, cv::Mat *above) {
+    _carImg = car;
     _overheadImg = above;
     return true;
 }
@@ -39,12 +39,14 @@ void CAutoController::runToPoint() {
 
 void CAutoController::startAutoTarget(int mark) {
     _threadExit[0] = false;
-
+    std::thread t1(&CAutoController::autoTarget, this);
+    t1.detach();
 }
 
 void CAutoController::startRunToPoint(cv::Point point) {
     _threadExit[1] = false;
-
+    std::thread t2(&CAutoController::runToPoint, this);
+    t2.detach();
 }
 
 void CAutoController::endAutoTarget() {
