@@ -146,6 +146,7 @@ void CZoomyClient::update() {
     }
     if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
     _dashcam_img = _dashcam_raw_img;
+    _arena_img = _arena_raw_img;
 }
 
 void CZoomyClient::draw() {
