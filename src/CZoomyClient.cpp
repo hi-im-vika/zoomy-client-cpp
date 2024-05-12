@@ -203,10 +203,10 @@ void CZoomyClient::draw() {
     ImGui::Begin("Connect", p_open);
     ImGui::Text("Host:");
     ImGui::SameLine();
-    ImGui::InputText("###host_input", _host.data(), _host.capacity());
+    ImGui::InputText("###host_input", _udp_host.data(), _udp_host.capacity());
     ImGui::Text("Port:");
     ImGui::SameLine();
-    ImGui::InputText("###port_input", _port.data(), _port.capacity());
+    ImGui::InputText("###port_input", _udp_port.data(), _udp_port.capacity());
     std::stringstream ss;
     for (auto &i : _values) {
         ss << i << " ";
@@ -281,36 +281,37 @@ void CZoomyClient::draw() {
 }
 
 void CZoomyClient::rx() {
-    _rx_bytes = 0;
-    _rx_buf.clear();
-    _client.do_rx(_rx_buf, _rx_bytes);
-    std::vector<uint8_t> temp(_rx_buf.begin(),_rx_buf.begin() + _rx_bytes);
+    _udp_rx_bytes = 0;
+    _udp_rx_buf.clear();
+    _udp_client.do_rx(_udp_rx_buf, _udp_rx_bytes);
+    std::vector<uint8_t> temp(_udp_rx_buf.begin(), _udp_rx_buf.begin() + _udp_rx_bytes);
     // only add to rx queue if data is not empty and not ping response
-    if(!temp.empty() && (temp.front() != '\6')) _rx_queue.emplace(temp);
+    if(!temp.empty() && (temp.front() != '\6')) _udp_rx_queue.emplace(temp);
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
 }
 
 void CZoomyClient::tx() {
-    for (; !_tx_queue.empty(); _tx_queue.pop()) {
-//        spdlog::info("Sending" + std::string(_tx_queue.front().begin(), _tx_queue.front().end()));
-        _client.do_tx(_tx_queue.front());
+    for (; !_udp_tx_queue.empty(); _udp_tx_queue.pop()) {
+//        spdlog::info("Sending" + std::string(_udp_tx_queue.front().begin(), _udp_tx_queue.front().end()));
+        _udp_client.do_tx(_udp_tx_queue.front());
     }
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
 }
 
-void CZoomyClient::thread_rx(CZoomyClient *who_called) {
-    while (!who_called->_do_exit) {
+void CZoomyClient::thread_udp_rx(CZoomyClient *who_called) {
+    while (!who_called->_udp_ready) {
         who_called->rx();
     }
 }
 
-void CZoomyClient::thread_tx(CZoomyClient *who_called) {
-    while (!who_called->_do_exit) {
+void CZoomyClient::thread_udp_tx(CZoomyClient *who_called) {
+    while (!who_called->_udp_ready) {
         who_called->tx();
     }
 }
 
 void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
+    if (input.empty()) return;
     cv::Mat flipped;
     // might crash here if input array is somehow emptied
     cv::cvtColor(input, flipped, cv::COLOR_BGR2RGB);

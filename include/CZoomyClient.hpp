@@ -20,7 +20,6 @@
 #endif
 
 #include <CUDPClient.hpp>
-//#include <opencv2/objdetect/aruco_detector.hpp>
 
 #include "CWindow.hpp"
 #include "CCommonBase.hpp"
@@ -64,21 +63,33 @@ private:
     // opencv aruco
     std::vector<int> _marker_ids;
     std::vector<std::vector<cv::Point2f>> _marker_corners, _rejected_candidates;
-//    cv::aruco::DetectorParameters _detector_params;
-//    cv::aruco::Dictionary _dictionary;
-//    cv::aruco::ArucoDetector _detector;
+    cv::aruco::DetectorParameters _detector_params;
+    cv::aruco::Dictionary _dictionary;
+    cv::aruco::ArucoDetector _detector;
 
-    // net
-    std::string _host;
-    std::string _port;
-    CUDPClient _client;
-    std::thread _thread_tx, _thread_rx;
-    std::chrono::steady_clock::time_point _timeout_count;
-    int _time_since_start;
-    std::queue<std::vector<uint8_t>> _tx_queue, _rx_queue;
-    std::vector<uint8_t> _rx_buf;
-    long _rx_bytes;
-    bool _send_data;
+    // net (udp)
+    bool _udp_ready;
+    std::string _udp_host;
+    std::string _udp_port;
+    CUDPClient _udp_client;
+    std::thread _thread_udp_tx, _thread_udp_rx;
+    std::chrono::steady_clock::time_point _udp_timeout_count;
+    int _udp_time_since_start;
+    std::queue<std::vector<uint8_t>> _udp_tx_queue, _udp_rx_queue;
+    std::vector<uint8_t> _udp_rx_buf;
+    long _udp_rx_bytes;
+    bool _udp_send_data;
+
+    // net (tcp)
+    bool _tcp_ready;
+    std::string _tcp_host;
+    std::string _tcp_port;
+    CUDPClient _tcp_client;
+    std::thread _thread_tcp_tx, _thread_tcp_rx;
+    std::queue<std::vector<uint8_t>> _tcp_tx_queue, _tcp_rx_queue;
+    std::vector<uint8_t> _tcp_rx_buf;
+    long _tcp_rx_bytes;
+    bool _tcp_send_data;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
     int normalize_with_trim(int i, int trim);
@@ -93,7 +104,12 @@ public:
     void update() override;
     void draw() override;
 
-    static void thread_rx(CZoomyClient *who_called);
-    static void thread_tx(CZoomyClient *who_called);
+    void update_udp();
+    void update_tcp();
 
+    static void thread_udp_rx(CZoomyClient *who_called);
+    static void thread_udp_tx(CZoomyClient *who_called);
+
+    static void thread_tcp_rx(CZoomyClient *who_called);
+    static void thread_tcp_tx(CZoomyClient *who_called);
 };
