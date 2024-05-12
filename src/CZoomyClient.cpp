@@ -144,18 +144,6 @@ void CZoomyClient::update() {
         _detector.setDictionary(_dictionary);
         _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
     }
-    if (!_raw_img.empty()) cv::aruco::drawDetectedMarkers(_raw_img, _marker_corners, _marker_ids);
-    _img = _raw_img;
-
-//    std::string payload;
-//    for(auto &i : _values) {
-//        payload += std::to_string(i) + " ";
-//    }
-//
-////    std::string payload = "asdf";
-//    _udp_tx_queue.emplace(payload.begin(), payload.end());
-//    spdlog::info("Last response time (ms): " + std::to_string(_udp_client.get_last_response_time()));
-//    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
     _dashcam_img = _dashcam_raw_img;
 }
