@@ -224,6 +224,8 @@ void CZoomyClient::draw() {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
+    ImGui::Text("Last rx for TCP: %s", _xml_vals.c_str());
+
     ImGui::End();
 
     ImGui::Begin("Dashcam", p_open);
@@ -253,6 +255,16 @@ void CZoomyClient::draw() {
 
     _lockout_dashcam.unlock();
     ImGui::End();
+
+    ImGui::Begin("Arena", p_open);
+
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    viewport_size = ImGui::GetContentRegionAvail();
+    ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
+    viewport_ratio = viewport_size.x / viewport_size.y;
+
+    _lockout_arena.lock();
+    mat_to_tex(_arena_img, _arena_tex);
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
