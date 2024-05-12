@@ -111,21 +111,14 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
 //    // net init
 //    // TODO: thread network update separately from
-//
-//    _udp_host = host;
-//    _udp_port = port;
-//    _udp_client.setup(_udp_host,_udp_port);
-//
-//    _udp_timeout_count = std::chrono::steady_clock::now();
-//    _udp_send_data = _udp_client.get_socket_status();
-//
-//    // start listen thread
-//    _thread_udp_rx = std::thread(thread_udp_rx, this);
-//    _thread_udp_rx.detach();
-//
-//    // start send thread
-//    _thread_udp_tx = std::thread(thread_udp_tx, this);
-//    _thread_udp_tx.detach();
+
+    // start udp update thread
+    _thread_update_udp = std::thread(thread_update_udp, this);
+    _thread_update_udp.detach();
+
+    // start tcp update thread
+    _thread_update_tcp = std::thread(thread_update_tcp, this);
+    _thread_update_tcp.detach();
 }
 
 CZoomyClient::~CZoomyClient() = default;
