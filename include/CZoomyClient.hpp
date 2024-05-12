@@ -20,6 +20,7 @@
 #endif
 
 #include <CUDPClient.hpp>
+#include <CTCPClient.hpp>
 
 #include "CWindow.hpp"
 #include "CCommonBase.hpp"
@@ -70,11 +71,11 @@ private:
     cv::aruco::ArucoDetector _detector;
 
     // net (udp)
-    bool _udp_ready;
+    bool _udp_req_ready;
     std::string _udp_host;
     std::string _udp_port;
     CUDPClient _udp_client;
-    std::thread _thread_udp_tx, _thread_udp_rx;
+    std::thread _thread_update_udp, _thread_udp_tx, _thread_udp_rx;
     std::chrono::steady_clock::time_point _udp_timeout_count;
     int _udp_time_since_start;
     std::queue<std::vector<uint8_t>> _udp_tx_queue, _udp_rx_queue;
@@ -83,21 +84,25 @@ private:
     bool _udp_send_data;
 
     // net (tcp)
-    bool _tcp_ready;
+    bool _tcp_req_ready;
     std::string _tcp_host;
     std::string _tcp_port;
-    CUDPClient _tcp_client;
-    std::thread _thread_tcp_tx, _thread_tcp_rx;
+    CTCPClient _tcp_client;
+    std::thread _thread_update_tcp, _thread_tcp_tx, _thread_tcp_rx;
     std::queue<std::vector<uint8_t>> _tcp_tx_queue, _tcp_rx_queue;
     std::vector<uint8_t> _tcp_rx_buf;
     long _tcp_rx_bytes;
     bool _tcp_send_data;
+    std::chrono::steady_clock::time_point _tcp_last_frame;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
     int normalize_with_trim(int i, int trim);
 
-    void rx();
-    void tx();
+    void udp_rx();
+    void udp_tx();
+
+    void tcp_rx();
+    void tcp_tx();
 
 public:
     CZoomyClient(cv::Size s, std::string host, std::string port);
@@ -109,9 +114,11 @@ public:
     void update_udp();
     void update_tcp();
 
+    static void thread_update_udp(CZoomyClient *who_called);
     static void thread_udp_rx(CZoomyClient *who_called);
     static void thread_udp_tx(CZoomyClient *who_called);
 
+    static void thread_update_tcp(CZoomyClient *who_called);
     static void thread_tcp_rx(CZoomyClient *who_called);
     static void thread_tcp_tx(CZoomyClient *who_called);
 };
