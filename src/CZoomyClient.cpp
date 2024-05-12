@@ -100,13 +100,14 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     // OpenCV init
 
     _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
-    _img = cv::Mat::ones(cv::Size(20,20),CV_8UC3);
+    _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
+    _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
 
     // preallocate texture handle
 
-    glGenTextures(1, &_tex);
-    glGenTextures(1, &_another_tex);
+    glGenTextures(1, &_dashcam_tex);
+    glGenTextures(1, &_arena_tex);
 
 //    // net init
 //    // TODO: thread network update separately from
