@@ -285,17 +285,17 @@ void CZoomyClient::draw() {
             std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
 }
 
-void CZoomyClient::rx() {
+void CZoomyClient::udp_rx() {
     _udp_rx_bytes = 0;
     _udp_rx_buf.clear();
     _udp_client.do_rx(_udp_rx_buf, _udp_rx_bytes);
     std::vector<uint8_t> temp(_udp_rx_buf.begin(), _udp_rx_buf.begin() + _udp_rx_bytes);
-    // only add to rx queue if data is not empty and not ping response
+    // only add to udp_rx queue if data is not empty and not ping response
     if(!temp.empty() && (temp.front() != '\6')) _udp_rx_queue.emplace(temp);
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
 }
 
-void CZoomyClient::tx() {
+void CZoomyClient::udp_tx() {
     for (; !_udp_tx_queue.empty(); _udp_tx_queue.pop()) {
 //        spdlog::info("Sending" + std::string(_udp_tx_queue.front().begin(), _udp_tx_queue.front().end()));
         _udp_client.do_tx(_udp_tx_queue.front());
@@ -303,15 +303,64 @@ void CZoomyClient::tx() {
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
 }
 
+void CZoomyClient::update_udp() {
+    if(!_udp_client.get_socket_status()) {
+        if (_udp_req_ready) {
+            _udp_client.ping();
+            _udp_client.setup(_udp_host,_udp_port);
+
+            _udp_timeout_count = std::chrono::steady_clock::now();
+            _udp_send_data = _udp_client.get_socket_status();
+
+            // start listen thread
+            _thread_udp_rx = std::thread(thread_udp_rx, this);
+            _thread_udp_rx.detach();
+
+            // start send thread
+            _thread_udp_tx = std::thread(thread_udp_tx, this);
+            _thread_udp_tx.detach();
+        }
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    } else {
+        for (; !_udp_rx_queue.empty(); _udp_rx_queue.pop()) {
+
+//            // acknowledge next data in queue
+            spdlog::info("New in RX queue with size: " + std::to_string(_udp_rx_queue.front().size()));
+
+            // reset timeout
+            // placement of this may be a source of future bug
+            _udp_timeout_count = std::chrono::steady_clock::now();
+        }
+        // do stuff...
+        std::string payload;
+        for (auto &i: _values) {
+            payload += std::to_string(i) + " ";
+        }
+
+        _udp_tx_queue.emplace(payload.begin(), payload.end());
+        spdlog::info("Last response time (ms): " + std::to_string(_udp_client.get_last_response_time()));
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    }
+}
+
+void CZoomyClient::thread_update_udp(CZoomyClient *who_called) {
+    while (!who_called->_do_exit) {
+        who_called->update_udp();
+    }
+}
+
 void CZoomyClient::thread_udp_rx(CZoomyClient *who_called) {
-    while (!who_called->_udp_ready) {
-        who_called->rx();
+    while (who_called->_udp_client.get_socket_status()) {
+        who_called->udp_rx();
     }
 }
 
 void CZoomyClient::thread_udp_tx(CZoomyClient *who_called) {
-    while (!who_called->_udp_ready) {
-        who_called->tx();
+    while (who_called->_udp_client.get_socket_status()) {
+        who_called->udp_tx();
+    }
+}
+
     }
 }
 
