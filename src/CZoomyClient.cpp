@@ -361,6 +361,83 @@ void CZoomyClient::thread_udp_tx(CZoomyClient *who_called) {
     }
 }
 
+void CZoomyClient::tcp_rx() {
+    _tcp_rx_bytes = 0;
+    _tcp_rx_buf.clear();
+    _tcp_client.do_rx(_tcp_rx_buf, _tcp_rx_bytes);
+    std::vector<uint8_t> temp(_tcp_rx_buf.begin(), _tcp_rx_buf.begin() + _tcp_rx_bytes);
+    // only add to tcp_rx queue if data is not empty and not ping response
+    if(!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
+}
+
+void CZoomyClient::tcp_tx() {
+    for (; !_tcp_tx_queue.empty(); _tcp_tx_queue.pop()) {
+//        spdlog::info("Sending" + std::string(_tcp_tx_queue.front().begin(), _tcp_tx_queue.front().end()));
+        _tcp_client.do_tx(_tcp_tx_queue.front());
+    }
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+}
+
+void CZoomyClient::update_tcp() {
+    if(!_tcp_client.get_socket_status()) {
+        if (_tcp_req_ready) {
+            _tcp_client.setup(_tcp_host,_tcp_port);
+
+            _tcp_send_data = _tcp_client.get_socket_status();
+
+            // start listen thread
+            _thread_tcp_rx = std::thread(thread_tcp_rx, this);
+            _thread_tcp_rx.detach();
+
+            // start send thread
+            _thread_tcp_tx = std::thread(thread_tcp_tx, this);
+            _thread_tcp_tx.detach();
+        }
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    } else {
+        for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
+
+//            // acknowledge next data in queue
+//            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+            // if big data (image)
+            if (_tcp_rx_queue.front().size() > 100) {
+                int time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - _tcp_last_frame).count();
+                if (time) {
+                    spdlog::info("FPS: {:03.2f}", 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now() - _tcp_last_frame).count());
+                }
+                cv::imdecode(_tcp_rx_queue.front(),cv::IMREAD_COLOR,&_arena_raw_img);
+                _tcp_last_frame = std::chrono::steady_clock::now();
+            } else {
+                // if small data (arena info)
+                _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
+            }
+        }
+        std::string payload = "G 0";
+        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+        payload = "G 1";
+        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    }
+}
+
+void CZoomyClient::thread_update_tcp(CZoomyClient *who_called) {
+    while (!who_called->_do_exit) {
+        who_called->update_tcp();
+    }
+}
+
+void CZoomyClient::thread_tcp_rx(CZoomyClient *who_called) {
+    while (who_called->_tcp_client.get_socket_status()) {
+        who_called->tcp_rx();
+    }
+}
+
+void CZoomyClient::thread_tcp_tx(CZoomyClient *who_called) {
+    while (who_called->_tcp_client.get_socket_status()) {
+        who_called->tcp_tx();
     }
 }
 
