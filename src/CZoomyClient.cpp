@@ -186,12 +186,39 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     ImGui::Begin("Connect", p_open);
-    ImGui::Text("Host:");
+    static char udp_host[64], udp_port[64], tcp_host[64], tcp_port[64];
+    ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::Text("UDP Host:");
     ImGui::SameLine();
-    ImGui::InputText("###host_input", _udp_host.data(), _udp_host.capacity());
-    ImGui::Text("Port:");
+    ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::Text("UDP Port:");
     ImGui::SameLine();
-    ImGui::InputText("###port_input", _udp_port.data(), _udp_port.capacity());
+    ImGui::InputText("###udp_port_input", udp_port, 64);
+    if(ImGui::Button("Connect to UDP")) {
+        _udp_host = udp_host;
+        _udp_port = udp_port;
+        _udp_req_ready = true;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::Text("TCP Host:");
+    ImGui::SameLine();
+    ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::Text("TCP Port:");
+    ImGui::SameLine();
+    ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    if(ImGui::Button("Connect to TCP")) {
+        _tcp_host = tcp_host;
+        _tcp_port = tcp_port;
+        _tcp_req_ready = true;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::BeginGroup();
+    ImGui::Checkbox("Rotate 180",&_flip_image);
+    ImGui::EndGroup();
+
     std::stringstream ss;
     for (auto &i : _values) {
         ss << i << " ";
@@ -224,14 +251,7 @@ void CZoomyClient::draw() {
         ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(viewport_size.x, imageHeight));
     }
 
-    _lockout.unlock();
-    ImGui::BeginGroup();
-    ImGui::Button("Connect to AVFoundation");
-    ImGui::SameLine();
-    ImGui::Button("Connect to GStreamer");
-    ImGui::SameLine();
-    ImGui::Checkbox("Rotate 180",&_flip_image);
-    ImGui::EndGroup();
+    _lockout_arena.unlock();
     ImGui::End();
 
     ImGui::Begin("OpenCV Details", p_open);
