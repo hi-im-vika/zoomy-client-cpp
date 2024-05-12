@@ -42,12 +42,13 @@ class CZoomyClient : public CCommonBase {
 private:
     // imgui
     std::unique_ptr<CWindow> _window;
-    GLuint _tex;
-    GLuint _another_tex;
-    cv::Mat _opencv_area;
-    cv::Mat _img, _raw_img;
+    GLuint _dashcam_tex;
+    GLuint _arena_tex;
+    cv::Mat _dashcam_area, _arena_area;
+    cv::Mat _dashcam_img, _dashcam_raw_img;
+    cv::Mat _arena_img, _arena_raw_img;
     SDL_Event _evt;
-    std::mutex _lockout;
+    std::mutex _lockout_dashcam, _lockout_arena;
 
     // control
     std::vector<int> _values;
@@ -55,6 +56,7 @@ private:
     bool _do_invert_steering;
     int _steering_trim;
     int _throttle_trim;
+    std::string _xml_vals;
 
     // opencv
     cv::VideoCapture _video_capture;
