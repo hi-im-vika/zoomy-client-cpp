@@ -99,6 +99,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     // OpenCV init
 
+    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
     _img = cv::Mat::ones(cv::Size(20,20),CV_8UC3);
     _flip_image = false;
 
@@ -107,80 +108,53 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     glGenTextures(1, &_tex);
     glGenTextures(1, &_another_tex);
 
-    // net init
-    // TODO: thread network update separately from
-
-    _host = host;
-    _port = port;
-    _client.setup(_host,_port);
-
-    _timeout_count = std::chrono::steady_clock::now();
-    _send_data = _client.get_socket_status();
-
-    // start listen thread
-    _thread_rx = std::thread(thread_rx, this);
-    _thread_rx.detach();
-
-    // start send thread
-    _thread_tx = std::thread(thread_tx, this);
-    _thread_tx.detach();
+//    // net init
+//    // TODO: thread network update separately from
+//
+//    _udp_host = host;
+//    _udp_port = port;
+//    _udp_client.setup(_udp_host,_udp_port);
+//
+//    _udp_timeout_count = std::chrono::steady_clock::now();
+//    _udp_send_data = _udp_client.get_socket_status();
+//
+//    // start listen thread
+//    _thread_udp_rx = std::thread(thread_udp_rx, this);
+//    _thread_udp_rx.detach();
+//
+//    // start send thread
+//    _thread_udp_tx = std::thread(thread_udp_tx, this);
+//    _thread_udp_tx.detach();
 }
 
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    cv::Mat raw_img;
-    for (; !_rx_queue.empty(); _rx_queue.pop()) {
+    _video_capture.read(_raw_img);
 
-//            // acknowledge next data in queue
-        spdlog::info("New in RX queue with size: " + std::to_string(_rx_queue.front().size()));
-        std::vector<uint8_t> temporary(_rx_queue.front().begin() + 4,_rx_queue.front().end());
-        cv::imdecode(temporary, cv::IMREAD_COLOR, &raw_img);
-
-        _lockout.lock();
-
-        if (_flip_image) {
-            cv::rotate(raw_img,raw_img,cv::ROTATE_180);
-        }
-
-//        if (!raw_img.empty()) {
-//            _detector_params = cv::aruco::DetectorParameters();
-//            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-//            _detector.setDetectorParameters(_detector_params);
-//            _detector.setDictionary(_dictionary);
-//            _detector.detectMarkers(raw_img, _marker_corners, _marker_ids, _rejected_candidates);
-//        }
-//        if (!raw_img.empty()) cv::aruco::drawDetectedMarkers(raw_img, _marker_corners, _marker_ids);
-        _img = raw_img;
-
-        _lockout.unlock();
-
-        // reset timeout
-        // placement of this may be a source of future bug
-        _timeout_count = std::chrono::steady_clock::now();
+    if (_flip_image) {
+        cv::rotate(_raw_img, _raw_img, cv::ROTATE_180);
     }
 
-    _time_since_start = (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _timeout_count).count();
-    if (_time_since_start > PING_TIMEOUT) {
-        spdlog::warn("Server is gone...");
-        _send_data = false;
-        do {
-            _client.setdn();
-            _client.setup(_host, _port);
-        } while (!_client.get_socket_status());
-        _send_data = _client.get_socket_status();
-        _timeout_count = std::chrono::steady_clock::now();
+    if (!_raw_img.empty()) {
+        _detector_params = cv::aruco::DetectorParameters();
+        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+        _detector.setDetectorParameters(_detector_params);
+        _detector.setDictionary(_dictionary);
+        _detector.detectMarkers(_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
     }
+    if (!_raw_img.empty()) cv::aruco::drawDetectedMarkers(_raw_img, _marker_corners, _marker_ids);
+    _img = _raw_img;
 
-    std::string payload;
-    for(auto &i : _values) {
-        payload += std::to_string(i) + " ";
-    }
-
-//    std::string payload = "asdf";
-    _tx_queue.emplace(payload.begin(), payload.end());
-    spdlog::info("Last response time (ms): " + std::to_string(_client.get_last_response_time()));
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+//    std::string payload;
+//    for(auto &i : _values) {
+//        payload += std::to_string(i) + " ";
+//    }
+//
+////    std::string payload = "asdf";
+//    _udp_tx_queue.emplace(payload.begin(), payload.end());
+//    spdlog::info("Last response time (ms): " + std::to_string(_udp_client.get_last_response_time()));
+//    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
 }
 
 void CZoomyClient::draw() {
