@@ -271,14 +271,14 @@ void CZoomyClient::draw() {
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(imageWidth, viewport_size.y));
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
     }
         // Scale the image vertically if the content region is taller than the image
     else {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(viewport_size.x, imageHeight));
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
     }
 
     _lockout_arena.unlock();
