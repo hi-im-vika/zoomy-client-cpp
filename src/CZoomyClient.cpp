@@ -131,18 +131,18 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    _video_capture.read(_raw_img);
+    _video_capture.read(_dashcam_raw_img);
 
     if (_flip_image) {
-        cv::rotate(_raw_img, _raw_img, cv::ROTATE_180);
+        cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
     }
 
-    if (!_raw_img.empty()) {
+    if (!_dashcam_raw_img.empty()) {
         _detector_params = cv::aruco::DetectorParameters();
         _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
         _detector.setDetectorParameters(_detector_params);
         _detector.setDictionary(_dictionary);
-        _detector.detectMarkers(_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+        _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
     }
     if (!_raw_img.empty()) cv::aruco::drawDetectedMarkers(_raw_img, _marker_corners, _marker_ids);
     _img = _raw_img;
@@ -156,6 +156,8 @@ void CZoomyClient::update() {
 //    _udp_tx_queue.emplace(payload.begin(), payload.end());
 //    spdlog::info("Last response time (ms): " + std::to_string(_udp_client.get_last_response_time()));
 //    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
+    _dashcam_img = _dashcam_raw_img;
 }
 
 void CZoomyClient::draw() {
