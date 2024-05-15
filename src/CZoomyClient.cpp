@@ -79,8 +79,8 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     ImGuiIO &io = ImGui::GetIO();
 
     io.ConfigFlags |=
-            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
-//    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+//            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigDockingTransparentPayload = true;
 
     // scale fonts for DPI
@@ -109,8 +109,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
 
-//    // net init
-//    // TODO: thread network update separately from
+    // net init
 
     // start udp update thread
     _thread_update_udp = std::thread(thread_update_udp, this);
@@ -154,7 +153,7 @@ void CZoomyClient::draw() {
                 break;
             case SDL_CONTROLLERBUTTONDOWN:
             case SDL_CONTROLLERBUTTONUP:
-                _values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
+                _values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
                 _values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
                 _values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
