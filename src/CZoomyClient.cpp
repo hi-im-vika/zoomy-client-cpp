@@ -197,7 +197,8 @@ void CZoomyClient::draw() {
     ImGui::Text("UDP Port:");
     ImGui::SameLine();
     ImGui::InputText("###udp_port_input", udp_port, 64);
-    if(ImGui::Button("Connect to UDP")) {
+    ImGui::Checkbox("Connect to UDP", &_udp_checkbox);
+    if(ImGui::IsItemDeactivated() && _udp_checkbox) {
         _udp_host = udp_host;
         _udp_port = udp_port;
         _udp_req_ready = true;
@@ -211,7 +212,8 @@ void CZoomyClient::draw() {
     ImGui::Text("TCP Port:");
     ImGui::SameLine();
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
-    if(ImGui::Button("Connect to TCP")) {
+    ImGui::Checkbox("Connect to TCP", &_tcp_checkbox);
+    if(ImGui::IsItemDeactivated() && _tcp_checkbox) {
         _tcp_host = tcp_host;
         _tcp_port = tcp_port;
         _tcp_req_ready = true;
@@ -309,7 +311,6 @@ void CZoomyClient::draw() {
 
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
-
     ImGui::End();
 
     ImGui::Render();

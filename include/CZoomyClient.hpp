@@ -75,6 +75,7 @@ private:
 
     // net (udp)
     bool _udp_req_ready;
+    bool _udp_checkbox;
     std::string _udp_host;
     std::string _udp_port;
     CUDPClient _udp_client;
@@ -88,6 +89,7 @@ private:
 
     // net (tcp)
     bool _tcp_req_ready;
+    bool _tcp_checkbox;
     std::string _tcp_host;
     std::string _tcp_port;
     CTCPClient _tcp_client;
