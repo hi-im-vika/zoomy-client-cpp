@@ -62,6 +62,9 @@ private:
     // opencv
     cv::VideoCapture _video_capture;
     bool _flip_image;
+    bool _gstreamer_checkbox;
+    std::string _gstreamer_string;
+    const std::string _default_gstreamer_string = "udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink\", cv::CAP_GSTREAMER";
 
     // opencv aruco
     std::vector<int> _marker_ids;

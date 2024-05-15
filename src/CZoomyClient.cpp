@@ -99,10 +99,12 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     // OpenCV init
 
-    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
+    _gstreamer_checkbox = true;
 
     // preallocate texture handle
 
@@ -123,21 +125,23 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    _video_capture.read(_dashcam_raw_img);
+    if(_gstreamer_checkbox) {
+        _video_capture.read(_dashcam_raw_img);
 
-    if (_flip_image) {
-        cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
-    }
+        if (_flip_image) {
+            cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
+        }
 
-    if (!_dashcam_raw_img.empty()) {
-        _detector_params = cv::aruco::DetectorParameters();
-        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-        _detector.setDetectorParameters(_detector_params);
-        _detector.setDictionary(_dictionary);
-        _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+        if (!_dashcam_raw_img.empty()) {
+            _detector_params = cv::aruco::DetectorParameters();
+            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+            _detector.setDetectorParameters(_detector_params);
+            _detector.setDictionary(_dictionary);
+            _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+        }
+        if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
+        _dashcam_img = _dashcam_raw_img;
     }
-    if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
-    _dashcam_img = _dashcam_raw_img;
     _arena_img = _arena_raw_img;
 }
 
@@ -285,6 +289,22 @@ void CZoomyClient::draw() {
 
     ImGui::Begin("OpenCV Details", p_open);
     ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::End();
+
+    ImGui::Begin("GStreamer", p_open);
+    ImGui::BeginDisabled(_gstreamer_checkbox);
+    ImGui::InputTextWithHint("###gstreamer_string",_default_gstreamer_string.data(),_gstreamer_string.data(),128);
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::Checkbox("Connect GStreamer", &_gstreamer_checkbox);
+    if(ImGui::IsItemDeactivated() && _gstreamer_checkbox) {
+        if(_gstreamer_string.empty()) {
+            _video_capture = cv::VideoCapture(_default_gstreamer_string, cv::CAP_GSTREAMER);
+        } else {
+            _video_capture = cv::VideoCapture(_gstreamer_string, cv::CAP_GSTREAMER);
+        }
+
+    }
     ImGui::End();
 
     ImGui::Begin("ImGui", p_open);
