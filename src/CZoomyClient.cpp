@@ -99,88 +99,47 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     // OpenCV init
 
-    _img = cv::Mat::ones(cv::Size(20,20),CV_8UC3);
+    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+    _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
+    _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
 
     // preallocate texture handle
 
-    glGenTextures(1, &_tex);
-    glGenTextures(1, &_another_tex);
+    glGenTextures(1, &_dashcam_tex);
+    glGenTextures(1, &_arena_tex);
 
-    // net init
-    // TODO: thread network update separately from
+//    // net init
+//    // TODO: thread network update separately from
 
-    _host = host;
-    _port = port;
-    _client.setup(_host,_port);
+    // start udp update thread
+    _thread_update_udp = std::thread(thread_update_udp, this);
+    _thread_update_udp.detach();
 
-    _timeout_count = std::chrono::steady_clock::now();
-    _send_data = _client.get_socket_status();
-
-    // start listen thread
-    _thread_rx = std::thread(thread_rx, this);
-    _thread_rx.detach();
-
-    // start send thread
-    _thread_tx = std::thread(thread_tx, this);
-    _thread_tx.detach();
+    // start tcp update thread
+    _thread_update_tcp = std::thread(thread_update_tcp, this);
+    _thread_update_tcp.detach();
 }
 
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    cv::Mat raw_img;
-    for (; !_rx_queue.empty(); _rx_queue.pop()) {
+    _video_capture.read(_dashcam_raw_img);
 
-//            // acknowledge next data in queue
-        spdlog::info("New in RX queue with size: " + std::to_string(_rx_queue.front().size()));
-        std::vector<uint8_t> temporary(_rx_queue.front().begin() + 4,_rx_queue.front().end());
-        cv::imdecode(temporary, cv::IMREAD_COLOR, &raw_img);
-
-        _lockout.lock();
-
-        if (_flip_image) {
-            cv::rotate(raw_img,raw_img,cv::ROTATE_180);
-        }
-
-//        if (!raw_img.empty()) {
-//            _detector_params = cv::aruco::DetectorParameters();
-//            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-//            _detector.setDetectorParameters(_detector_params);
-//            _detector.setDictionary(_dictionary);
-//            _detector.detectMarkers(raw_img, _marker_corners, _marker_ids, _rejected_candidates);
-//        }
-//        if (!raw_img.empty()) cv::aruco::drawDetectedMarkers(raw_img, _marker_corners, _marker_ids);
-        _img = raw_img;
-
-        _lockout.unlock();
-
-        // reset timeout
-        // placement of this may be a source of future bug
-        _timeout_count = std::chrono::steady_clock::now();
+    if (_flip_image) {
+        cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
     }
 
-    _time_since_start = (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _timeout_count).count();
-    if (_time_since_start > PING_TIMEOUT) {
-        spdlog::warn("Server is gone...");
-        _send_data = false;
-        do {
-            _client.setdn();
-            _client.setup(_host, _port);
-        } while (!_client.get_socket_status());
-        _send_data = _client.get_socket_status();
-        _timeout_count = std::chrono::steady_clock::now();
+    if (!_dashcam_raw_img.empty()) {
+        _detector_params = cv::aruco::DetectorParameters();
+        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+        _detector.setDetectorParameters(_detector_params);
+        _detector.setDictionary(_dictionary);
+        _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
     }
-
-    std::string payload;
-    for(auto &i : _values) {
-        payload += std::to_string(i) + " ";
-    }
-
-//    std::string payload = "asdf";
-    _tx_queue.emplace(payload.begin(), payload.end());
-    spdlog::info("Last response time (ms): " + std::to_string(_client.get_last_response_time()));
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
+    _dashcam_img = _dashcam_raw_img;
+    _arena_img = _arena_raw_img;
 }
 
 void CZoomyClient::draw() {
@@ -227,52 +186,102 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     ImGui::Begin("Connect", p_open);
-    ImGui::Text("Host:");
+    static char udp_host[64], udp_port[64], tcp_host[64], tcp_port[64];
+    ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::Text("UDP Host:");
     ImGui::SameLine();
-    ImGui::InputText("###host_input", _host.data(), _host.capacity());
-    ImGui::Text("Port:");
+    ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::Text("UDP Port:");
     ImGui::SameLine();
-    ImGui::InputText("###port_input", _port.data(), _port.capacity());
+    ImGui::InputText("###udp_port_input", udp_port, 64);
+    if(ImGui::Button("Connect to UDP")) {
+        _udp_host = udp_host;
+        _udp_port = udp_port;
+        _udp_req_ready = true;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::Text("TCP Host:");
+    ImGui::SameLine();
+    ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::Text("TCP Port:");
+    ImGui::SameLine();
+    ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    if(ImGui::Button("Connect to TCP")) {
+        _tcp_host = tcp_host;
+        _tcp_port = tcp_port;
+        _tcp_req_ready = true;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::BeginGroup();
+    ImGui::Checkbox("Rotate 180",&_flip_image);
+    ImGui::EndGroup();
+
     std::stringstream ss;
     for (auto &i : _values) {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
+    ImGui::Text("Last rx for TCP: %s", _xml_vals.c_str());
+
     ImGui::End();
 
-    ImGui::Begin("OpenCV", p_open);
+    ImGui::Begin("Dashcam", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) _img.cols) / ((float) _img.rows);
+    float ratio = ((float) _dashcam_img.cols) / ((float) _dashcam_img.rows);
     float viewport_ratio = viewport_size.x / viewport_size.y;
 
-    _lockout.lock();
-    mat_to_tex(_img, _tex);
+    _lockout_dashcam.lock();
+    mat_to_tex(_dashcam_img, _dashcam_tex);
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(imageWidth, viewport_size.y));
+        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(imageWidth, viewport_size.y));
     }
         // Scale the image vertically if the content region is taller than the image
     else {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _tex, ImVec2(viewport_size.x, imageHeight));
+        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(viewport_size.x, imageHeight));
     }
 
-    _lockout.unlock();
-    ImGui::BeginGroup();
-    ImGui::Button("Connect to AVFoundation");
-    ImGui::SameLine();
-    ImGui::Button("Connect to GStreamer");
-    ImGui::SameLine();
-    ImGui::Checkbox("Rotate 180",&_flip_image);
-    ImGui::EndGroup();
+    _lockout_dashcam.unlock();
+    ImGui::End();
+
+    ImGui::Begin("Arena", p_open);
+
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    viewport_size = ImGui::GetContentRegionAvail();
+    ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
+    viewport_ratio = viewport_size.x / viewport_size.y;
+
+    _lockout_arena.lock();
+    mat_to_tex(_arena_img, _arena_tex);
+
+    // Scale the image horizontally if the content region is wider than the image
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
+    }
+
+    _lockout_arena.unlock();
     ImGui::End();
 
     ImGui::Begin("OpenCV Details", p_open);
@@ -306,37 +315,164 @@ void CZoomyClient::draw() {
             std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
 }
 
-void CZoomyClient::rx() {
-    _rx_bytes = 0;
-    _rx_buf.clear();
-    _client.do_rx(_rx_buf, _rx_bytes);
-    std::vector<uint8_t> temp(_rx_buf.begin(),_rx_buf.begin() + _rx_bytes);
-    // only add to rx queue if data is not empty and not ping response
-    if(!temp.empty() && (temp.front() != '\6')) _rx_queue.emplace(temp);
+void CZoomyClient::udp_rx() {
+    _udp_rx_bytes = 0;
+    _udp_rx_buf.clear();
+    _udp_client.do_rx(_udp_rx_buf, _udp_rx_bytes);
+    std::vector<uint8_t> temp(_udp_rx_buf.begin(), _udp_rx_buf.begin() + _udp_rx_bytes);
+    // only add to udp_rx queue if data is not empty and not ping response
+    if(!temp.empty() && (temp.front() != '\6')) _udp_rx_queue.emplace(temp);
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
 }
 
-void CZoomyClient::tx() {
-    for (; !_tx_queue.empty(); _tx_queue.pop()) {
-//        spdlog::info("Sending" + std::string(_tx_queue.front().begin(), _tx_queue.front().end()));
-        _client.do_tx(_tx_queue.front());
+void CZoomyClient::udp_tx() {
+    for (; !_udp_tx_queue.empty(); _udp_tx_queue.pop()) {
+//        spdlog::info("Sending" + std::string(_udp_tx_queue.front().begin(), _udp_tx_queue.front().end()));
+        _udp_client.do_tx(_udp_tx_queue.front());
     }
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
 }
 
-void CZoomyClient::thread_rx(CZoomyClient *who_called) {
-    while (!who_called->_do_exit) {
-        who_called->rx();
+void CZoomyClient::update_udp() {
+    if(!_udp_client.get_socket_status()) {
+        if (_udp_req_ready) {
+            _udp_client.ping();
+            _udp_client.setup(_udp_host,_udp_port);
+
+            _udp_timeout_count = std::chrono::steady_clock::now();
+            _udp_send_data = _udp_client.get_socket_status();
+
+            // start listen thread
+            _thread_udp_rx = std::thread(thread_udp_rx, this);
+            _thread_udp_rx.detach();
+
+            // start send thread
+            _thread_udp_tx = std::thread(thread_udp_tx, this);
+            _thread_udp_tx.detach();
+        }
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    } else {
+        for (; !_udp_rx_queue.empty(); _udp_rx_queue.pop()) {
+
+//            // acknowledge next data in queue
+            spdlog::info("New in RX queue with size: " + std::to_string(_udp_rx_queue.front().size()));
+
+            // reset timeout
+            // placement of this may be a source of future bug
+            _udp_timeout_count = std::chrono::steady_clock::now();
+        }
+        // do stuff...
+        std::string payload;
+        for (auto &i: _values) {
+            payload += std::to_string(i) + " ";
+        }
+
+        _udp_tx_queue.emplace(payload.begin(), payload.end());
+        spdlog::info("Last response time (ms): " + std::to_string(_udp_client.get_last_response_time()));
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     }
 }
 
-void CZoomyClient::thread_tx(CZoomyClient *who_called) {
+void CZoomyClient::thread_update_udp(CZoomyClient *who_called) {
     while (!who_called->_do_exit) {
-        who_called->tx();
+        who_called->update_udp();
+    }
+}
+
+void CZoomyClient::thread_udp_rx(CZoomyClient *who_called) {
+    while (who_called->_udp_client.get_socket_status()) {
+        who_called->udp_rx();
+    }
+}
+
+void CZoomyClient::thread_udp_tx(CZoomyClient *who_called) {
+    while (who_called->_udp_client.get_socket_status()) {
+        who_called->udp_tx();
+    }
+}
+
+void CZoomyClient::tcp_rx() {
+    _tcp_rx_bytes = 0;
+    _tcp_rx_buf.clear();
+    _tcp_client.do_rx(_tcp_rx_buf, _tcp_rx_bytes);
+    std::vector<uint8_t> temp(_tcp_rx_buf.begin(), _tcp_rx_buf.begin() + _tcp_rx_bytes);
+    // only add to tcp_rx queue if data is not empty and not ping response
+    if(!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
+}
+
+void CZoomyClient::tcp_tx() {
+    for (; !_tcp_tx_queue.empty(); _tcp_tx_queue.pop()) {
+//        spdlog::info("Sending" + std::string(_tcp_tx_queue.front().begin(), _tcp_tx_queue.front().end()));
+        _tcp_client.do_tx(_tcp_tx_queue.front());
+    }
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+}
+
+void CZoomyClient::update_tcp() {
+    if(!_tcp_client.get_socket_status()) {
+        if (_tcp_req_ready) {
+            _tcp_client.setup(_tcp_host,_tcp_port);
+
+            _tcp_send_data = _tcp_client.get_socket_status();
+
+            // start listen thread
+            _thread_tcp_rx = std::thread(thread_tcp_rx, this);
+            _thread_tcp_rx.detach();
+
+            // start send thread
+            _thread_tcp_tx = std::thread(thread_tcp_tx, this);
+            _thread_tcp_tx.detach();
+        }
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    } else {
+        for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
+
+//            // acknowledge next data in queue
+//            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+            // if big data (image)
+            if (_tcp_rx_queue.front().size() > 100) {
+                int time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - _tcp_last_frame).count();
+                if (time) {
+                    spdlog::info("FPS: {:03.2f}", 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now() - _tcp_last_frame).count());
+                }
+                cv::imdecode(_tcp_rx_queue.front(),cv::IMREAD_COLOR,&_arena_raw_img);
+                _tcp_last_frame = std::chrono::steady_clock::now();
+            } else {
+                // if small data (arena info)
+                _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
+            }
+        }
+        std::string payload = "G 0";
+        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+        payload = "G 1";
+        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    }
+}
+
+void CZoomyClient::thread_update_tcp(CZoomyClient *who_called) {
+    while (!who_called->_do_exit) {
+        who_called->update_tcp();
+    }
+}
+
+void CZoomyClient::thread_tcp_rx(CZoomyClient *who_called) {
+    while (who_called->_tcp_client.get_socket_status()) {
+        who_called->tcp_rx();
+    }
+}
+
+void CZoomyClient::thread_tcp_tx(CZoomyClient *who_called) {
+    while (who_called->_tcp_client.get_socket_status()) {
+        who_called->tcp_tx();
     }
 }
 
 void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
+    if (input.empty()) return;
     cv::Mat flipped;
     // might crash here if input array is somehow emptied
     cv::cvtColor(input, flipped, cv::COLOR_BGR2RGB);
