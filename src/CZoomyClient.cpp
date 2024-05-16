@@ -41,7 +41,6 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
         }
     }
 
-    _steering_trim = _throttle_trim = 0;
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
 
     // dear imgui init
@@ -162,14 +161,10 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
-                if (_do_invert_steering) {
-                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim) * -1, _steering_trim);
-                } else {
-                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim), _steering_trim);
-                }
+                _values.at(value_type::GC_LEFTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
                 _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
                 _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
-                _values.at(value_type::GC_RIGHTY) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY) + _throttle_trim), _throttle_trim);
+                _values.at(value_type::GC_RIGHTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
                 _values.at(value_type::GC_LTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
                 break;
@@ -484,17 +479,6 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
-}
-
-int CZoomyClient::normalize_with_trim(int i, int trim) {
-    int mult = i > 0 ? 1 : -1;
-    int locked_range = 32767 - trim;
-    int raw = i - trim;
-    if ((locked_range - abs(raw)) < 0) {
-        return (mult * locked_range) + trim;
-    } else {
-        return i;
-    }
 }
 
 int main(int argc, char *argv[]) {

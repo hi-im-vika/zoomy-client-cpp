@@ -54,9 +54,6 @@ private:
     // control
     std::vector<int> _values;
     SDL_GameController *_gc;
-    bool _do_invert_steering;
-    int _steering_trim;
-    int _throttle_trim;
     std::string _xml_vals;
 
     // opencv
@@ -95,7 +92,6 @@ private:
     bool _tcp_send_data;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
-    int normalize_with_trim(int i, int trim);
 
     void udp_rx();
     void udp_tx();
