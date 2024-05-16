@@ -55,6 +55,24 @@ void CAutoController::autoTarget() {
 }
 
 void CAutoController::runToPoint() {
+    if (!_overheadImg->empty()) {
+        std::vector<cv::Vec4i> hierarchy;
+        std::vector<std::vector<cv::Point>> contours;
+        std::vector<cv::Point> contour;
+        cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
+        cv::inRange(_above, HSV_L, HSV_H, _above);
+        cv::dilate(_above, _above, cv::Mat());
+        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+        int biggest = 0;
+        cv::Rect car;
+        for (int i = 0; i < contours.size(); i++) {
+            cv::Rect r = boundingRect(contours.at(i));
+            if ((r.width * r.height) > biggest) {
+                biggest = r.width * r.height;
+                car = r;
+            }
+        }
 
 }
 
