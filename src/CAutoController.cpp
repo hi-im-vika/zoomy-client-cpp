@@ -36,7 +36,22 @@ void CAutoController::runToPointThread(CAutoController* ptr) {
 }
 
 void CAutoController::autoTarget() {
-
+    if (!_carImg->empty()) {
+        _detector_params = cv::aruco::DetectorParameters();
+        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+        _detector.setDetectorParameters(_detector_params);
+        _detector.setDictionary(_dictionary);
+        _detector.detectMarkers(*_carImg, _marker_corners, _marker_ids, _rejected_candidates);
+    }
+    if (!_carImg->empty()) {
+        cv::aruco::drawDetectedMarkers(*_carImg, _marker_corners, _marker_ids);
+        for (int i = 0; i < _marker_ids.size(); i++) {
+            if (_marker_ids.at(i) == _target) {
+                _autoInput[ROTATE] =
+                        -((_carImg->size().width / 2) - ((_marker_corners[i][0].x - _marker_corners[i][1].x) / 2)) * 32768.0 / _carImg->size().width;
+            }
+        }
+    }
 }
 
 void CAutoController::runToPoint() {
