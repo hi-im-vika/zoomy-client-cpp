@@ -15,6 +15,10 @@ private:
 
     std::vector<bool> _threadExit;
 
+    cv::Point _destination;
+    int _target;
+    int _speed;
+
     static void autoTargetThread(CAutoController* ptr);
 
     static void runToPointThread(CAutoController* ptr);
@@ -58,4 +62,6 @@ public:
     void endRunToPoint();
 
     int getAutoInput(int type);
+
+    bool isRunning();
 };
