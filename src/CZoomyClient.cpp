@@ -267,8 +267,7 @@ void CZoomyClient::draw() {
     ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     viewport_ratio = viewport_size.x / viewport_size.y;
 
-    _lockout_arena.lock();
-    mat_to_tex(_arena_img, _arena_tex);
+    mat_to_tex(_arena_raw_img, _arena_tex);
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
@@ -284,8 +283,6 @@ void CZoomyClient::draw() {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
     }
-
-    _lockout_arena.unlock();
     ImGui::End();
 
     ImGui::Begin("OpenCV Details", p_open);
