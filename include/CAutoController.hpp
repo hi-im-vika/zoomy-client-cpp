@@ -23,6 +23,12 @@ private:
 
     void runToPoint();
 
+    std::vector<int> _marker_ids;
+    std::vector<std::vector<cv::Point2f>> _marker_corners, _rejected_candidates;
+    cv::aruco::DetectorParameters _detector_params;
+    cv::aruco::Dictionary _dictionary;
+    cv::aruco::ArucoDetector _detector;
+
 public:
     enum valueType {
         GC_LEFTX,
