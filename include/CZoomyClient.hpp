@@ -93,7 +93,6 @@ private:
     std::vector<uint8_t> _tcp_rx_buf;
     long _tcp_rx_bytes;
     bool _tcp_send_data;
-    std::chrono::steady_clock::time_point _tcp_last_frame;
 
     void mat_to_tex(cv::Mat &input, GLuint &output);
     int normalize_with_trim(int i, int trim);
