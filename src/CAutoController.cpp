@@ -62,32 +62,38 @@ void CAutoController::runToPoint() {
         std::vector<cv::Point> contour;
         cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
         cv::inRange(_above, HSV_L, HSV_H, _above);
-        cv::dilate(_above, _above, cv::Mat());
-        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+//        cv::dilate(_above, _above, cv::Mat());
 
-        int biggest = 0;
-        cv::Rect car;
-        for (int i = 0; i < contours.size(); i++) {
-            cv::Rect r = boundingRect(contours.at(i));
-            if ((r.width * r.height) > biggest) {
-                biggest = r.width * r.height;
-                car = r;
-            }
-        }
         _masked_img = _above;
+//        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+//
+//        _overheadImg = &_above;
+//
+//        int biggest = 0;
+//        cv::Rect car;
+//        for (int i = 0; i < contours.size(); i++) {
+//            cv::Rect r = boundingRect(contours.at(i));
+//            if ((r.width * r.height) > biggest) {
+//                biggest = r.width * r.height;
+//                car = r;
+//            }
+//        }
 
         _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
         _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
 
-        std::cout << cv::Point((car.x + car.width / 2), (car.y + car.height / 2)) << std::endl;
-        cv::circle(*_overheadImg, cv::Point((car.x + car.width / 2), (car.y + car.height / 2)), _overheadImg->cols / 60,
-                   cv::Scalar(0, 255, 0), -1);
-        cv::circle(*_overheadImg, _destination, _overheadImg->cols / 40, cv::Scalar(255, 0, 0), -1);
+//        _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
+//        _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
 
-        if (hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2)) <
-                ((_speed / 32768.0) * _overheadImg->cols / 5)) {
-            _threadExit[1] = true;
-        }
+//        std::cout << cv::Point((car.x + car.width / 2), (car.y + car.height / 2)) << std::endl;
+//        cv::circle(*_overheadImg, cv::Point((car.x + car.width / 2), (car.y + car.height / 2)), _overheadImg->cols / 60,
+//                   cv::Scalar(0, 255, 0), -1);
+//        cv::circle(*_overheadImg, _destination, _overheadImg->cols / 40, cv::Scalar(255, 0, 0), -1);
+
+//        if (hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2)) <
+//                ((_speed / 32768.0) * _overheadImg->cols / 5)) {
+//            _threadExit[1] = true;
+//        }
     }
 }
 
