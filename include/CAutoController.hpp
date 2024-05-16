@@ -1,7 +1,9 @@
 //
 // Created by Ronal on 5/7/2024.
 //
-#include "CZoomyClient.hpp"
+
+#include <opencv2/core.hpp>
+#include <opencv2/objdetect.hpp>
 #include "thread"
 #include "vector"
 
