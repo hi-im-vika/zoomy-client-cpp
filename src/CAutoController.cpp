@@ -13,7 +13,9 @@ CAutoController::~CAutoController() {
     _threadExit = std::vector<bool>(2,true);
 }
 
-bool CAutoController::CAutoControllerInit(cv::Mat *car, cv::Mat *above) {
+bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
+    _threadExit = std::vector<bool>(2,true);
+    _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
     return true;
