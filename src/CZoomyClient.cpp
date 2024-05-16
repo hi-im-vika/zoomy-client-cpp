@@ -42,7 +42,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
         }
     }
 
-    _values = {0, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
+    _values = {0, 0, 0, 0, 180, 0, 0, 0, 0 ,0};
 
     // dear imgui init
     // Decide GL+GLSL versions
