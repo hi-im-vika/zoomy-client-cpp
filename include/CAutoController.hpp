@@ -34,17 +34,10 @@ private:
     cv::aruco::ArucoDetector _detector;
 
 public:
-    enum valueType {
-        GC_LEFTX,
-        GC_LEFTY,
-        GC_RIGHTX,
-        GC_RIGHTY,
-        GC_LTRIG,
-        GC_RTRIG,
-        GC_A,
-        GC_B,
-        GC_X,
-        GC_Y,
+    enum controlType {
+        MOVE_X,
+        MOVE_Y,
+        ROTATE,
     };
 
     CAutoController();
