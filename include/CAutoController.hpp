@@ -41,13 +41,13 @@ public:
 
     ~CAutoController();
 
-    bool CAutoControllerInit(cv::Mat *car, cv::Mat *above);
+    bool init(cv::Mat *car, cv::Mat *above);
 
-    void startAutoTarget(int mark);
+    void startAutoTarget(int id);
 
     void endAutoTarget();
 
-    void startRunToPoint(cv::Point point);
+    void startRunToPoint(cv::Point point, int speed);
 
     void endRunToPoint();
 
