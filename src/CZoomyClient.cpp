@@ -118,7 +118,6 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
 
     // preallocate texture handle
-
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
 
