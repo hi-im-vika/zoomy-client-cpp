@@ -10,8 +10,8 @@
 #define NET_DELAY 35
 
 // increase this value if malloc_error_break happens too often
-// #define TCP_DELAY 30
-#define TCP_DELAY 15 // only if over ssh forwarding
+ #define TCP_DELAY 30
+//#define TCP_DELAY 15 // only if over ssh forwarding
 
 CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _window_size = s;
@@ -440,10 +440,10 @@ void CZoomyClient::update_tcp() {
                 _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
             }
         }
-        std::string payload = "G 0";
+        std::string payload = "G 1";
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
-        payload = "G 1";
-        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+//        payload = "G 1";
+//        _tcp_tx_queue.emplace(payload.begin(), payload.end());
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
     }
 }
