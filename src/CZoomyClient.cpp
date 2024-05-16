@@ -141,6 +141,67 @@ void CZoomyClient::update() {
     }
     if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
     _dashcam_img = _dashcam_raw_img;
+    //_arena_img = _arena_raw_img;
+
+    if (_values.at(value_type::GC_Y)) {
+        _auto = true;
+        _step = 0;
+    }
+    if (_values.at(value_type::GC_B)) {
+        _auto = false;
+        _autonomous.endAutoTarget();
+        _autonomous.endRunToPoint();
+    }
+
+    if (!_autonomous.isRunning() && _auto) {
+        switch (_step) {
+            case 0:
+                _step++;
+                break;
+            case 1:
+                _autonomous.startRunToPoint(cv::Point(69, 369), 14000);
+                _values.at(value_type::GC_LTRIG) = 180;
+                _step++;
+                break;
+            case 2:
+                _autonomous.startRunToPoint(cv::Point(225, 400), 12000);
+                _values.at(value_type::GC_LTRIG) = 210;
+                _step++;
+                break;
+            case 3:
+                _autonomous.startRunToPoint(cv::Point(127, 286), 12000);
+                _values.at(value_type::GC_LTRIG) = 210;
+                _step++;
+                break;
+            case 4:
+                _autonomous.startRunToPoint(cv::Point(127, 138), 13500);
+                _values.at(value_type::GC_LTRIG) = 90;
+                _step++;
+                break;
+            case 5:
+                _autonomous.startRunToPoint(cv::Point(327, 105), 14000);
+                _step++;
+                break;
+            case 6:
+                _autonomous.startRunToPoint(cv::Point(467, 147), 14000);
+                _values.at(value_type::GC_LTRIG) = 350;
+                _step++;
+                break;
+            case 7:
+                _autonomous.startRunToPoint(cv::Point(556, 336), 12000);
+                _step++;
+                break;
+            case 8:
+                _autonomous.startRunToPoint(cv::Point(561, 310), 12000);
+                _step++;
+                break;
+            case 9:
+                _autonomous.startRunToPoint(cv::Point(572, 566), 12000);
+                _values.at(value_type::GC_LTRIG) = 270;
+                _step++;
+                break;
+        }
+    }
 }
 
 void CZoomyClient::draw() {
