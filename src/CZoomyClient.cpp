@@ -107,6 +107,16 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
 
+    // control init
+    if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
+        spdlog::error("Error during CAutoController init.");
+        exit(-1);
+    }
+    _auto = false;
+    _step = 0;
+
+    _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
+
     // preallocate texture handle
 
     glGenTextures(1, &_dashcam_tex);
