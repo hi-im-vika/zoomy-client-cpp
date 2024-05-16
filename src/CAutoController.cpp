@@ -115,3 +115,7 @@ void CAutoController::endRunToPoint() {
 int CAutoController::getAutoInput(int type) {
     return _autoInput[type];
 }
+
+bool CAutoController::isRunning() {
+    return !_threadExit[1];
+}
