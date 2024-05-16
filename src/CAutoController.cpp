@@ -4,7 +4,7 @@
 #include "../include/CAutoController.hpp"
 
 #define MOVE_SPEED 255
-#define HSV_L cv::Scalar(0, 80, 180)
+#define HSV_L cv::Scalar(0, 140, 140)
 #define HSV_H cv::Scalar(22, 255, 255)
 
 CAutoController::CAutoController() = default;
