@@ -2,8 +2,8 @@
 // Created by Ronal on 5/7/2024.
 //
 
-#include <opencv2/core.hpp>
-#include <opencv2/objdetect.hpp>
+#include <opencv2/opencv_modules.hpp>
+#include <opencv2/opencv.hpp>
 #include "thread"
 #include "vector"
 
