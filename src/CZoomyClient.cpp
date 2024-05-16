@@ -82,7 +82,6 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
 
-    io.ConfigFlags |=
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigDockingTransparentPayload = true;
 
@@ -189,7 +188,10 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     ImGui::Begin("Connect", p_open);
-    static char udp_host[64], udp_port[64], tcp_host[64], tcp_port[64];
+    static char udp_host[64] = "192.168.1.104";
+    static char udp_port[64] = "46188";
+    static char tcp_host[64] = "127.0.0.1";
+    static char tcp_port[64] = "4006";
     ImGui::BeginDisabled(_udp_req_ready);
     ImGui::Text("UDP Host:");
     ImGui::SameLine();
