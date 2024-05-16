@@ -49,9 +49,11 @@ void CAutoController::startAutoTarget(int mark) {
     t1.detach();
 }
 
-void CAutoController::startRunToPoint(cv::Point point) {
+void CAutoController::startRunToPoint(cv::Point point, int speed) {
     _threadExit[1] = false;
-    std::thread t2(&CAutoController::runToPoint, this);
+    _speed = speed;
+    _destination = point;
+    std::thread t2(&CAutoController::runToPointThread, this);
     t2.detach();
 }
 
