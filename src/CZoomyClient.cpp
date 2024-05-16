@@ -83,8 +83,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     ImGuiIO &io = ImGui::GetIO();
 
     io.ConfigFlags |=
-            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
-//    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigDockingTransparentPayload = true;
 
     // scale fonts for DPI
