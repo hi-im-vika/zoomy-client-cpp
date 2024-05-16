@@ -436,14 +436,7 @@ void CZoomyClient::update_tcp() {
 //            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
             // if big data (image)
             if (_tcp_rx_queue.front().size() > 100) {
-                int time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now() - _tcp_last_frame).count();
-                if (time) {
-                    spdlog::info("FPS: {:03.2f}", 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::steady_clock::now() - _tcp_last_frame).count());
-                }
-                cv::imdecode(_tcp_rx_queue.front(),cv::IMREAD_COLOR,&_arena_raw_img);
-                _tcp_last_frame = std::chrono::steady_clock::now();
+                cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
             } else {
                 // if small data (arena info)
                 _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
