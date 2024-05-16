@@ -13,6 +13,7 @@
 #include <spdlog/spdlog.h>
 #include <SDL.h>
 #include <sstream>
+#include <math.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL_opengles2.h>
 #else
@@ -25,6 +26,7 @@
 #include "CWindow.hpp"
 #include "CCommonBase.hpp"
 #include "CDPIHandler.hpp"
+#include "CAutoController.hpp"
 
 enum value_type {
     GC_LEFTX,
@@ -52,8 +54,12 @@ private:
     std::mutex _lockout_dashcam, _lockout_arena;
 
     // control
+    CAutoController _autonomous;
+    unsigned int _step;
     std::vector<int> _values;
+    std::vector<cv::Point> _joystick;
     SDL_GameController *_gc;
+    bool _auto;
     std::string _xml_vals;
 
     // opencv
