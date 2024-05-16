@@ -9,6 +9,10 @@
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
 
+// increase this value if malloc_error_break happens too often
+// #define TCP_DELAY 30
+#define TCP_DELAY 15 // only if over ssh forwarding
+
 CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _window_size = s;
 
