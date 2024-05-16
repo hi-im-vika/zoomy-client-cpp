@@ -18,6 +18,7 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
+    _masked_img = cv::Mat::ones(cv::Size(600,600), CV_8UC3);
     return true;
 }
 
@@ -73,6 +74,7 @@ void CAutoController::runToPoint() {
                 car = r;
             }
         }
+        _masked_img = _above;
 
         _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
         _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
@@ -118,4 +120,8 @@ int CAutoController::getAutoInput(int type) {
 
 bool CAutoController::isRunning() {
     return !_threadExit[1];
+}
+
+cv::Mat CAutoController::get_masked_image() {
+    return _masked_img;
 }

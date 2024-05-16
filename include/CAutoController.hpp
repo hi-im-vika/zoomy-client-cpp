@@ -10,7 +10,7 @@
 
 class CAutoController {
 private:
-    cv::Mat *_carImg, *_overheadImg, _above;
+    cv::Mat *_carImg, *_overheadImg, _above, _masked_img;
 
     std::vector<int> _autoInput;
 
@@ -58,4 +58,6 @@ public:
     int getAutoInput(int type);
 
     bool isRunning();
+
+    cv::Mat get_masked_image();
 };
