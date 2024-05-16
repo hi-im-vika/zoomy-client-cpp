@@ -8,6 +8,7 @@
 
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
+#define DEADZONE 2048
 
 // increase this value if malloc_error_break happens too often
  #define TCP_DELAY 30
@@ -222,11 +223,37 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
-                _values.at(value_type::GC_LEFTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
-                _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
-                _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
-                _values.at(value_type::GC_RIGHTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
-                _values.at(value_type::GC_LTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+                _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
+                _joystick[0].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
+                _joystick[1].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
+                _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
+
+                if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
+                    _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                    _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                }
+                else if (_auto) {
+                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
+                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
+                }
+                else {
+                    _values.at(value_type::GC_LEFTX) = 0;
+                    _values.at(value_type::GC_LEFTY) = 0;
+                }
+
+                if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
+                    _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
+                    _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
+                }
+                else if (_auto) {
+                    _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                }
+                else {
+                    _values.at(value_type::GC_RIGHTX) = 0;
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                }
+
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
                 break;
             default:
