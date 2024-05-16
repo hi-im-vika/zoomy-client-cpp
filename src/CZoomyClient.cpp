@@ -399,7 +399,9 @@ void CZoomyClient::tcp_rx() {
     std::vector<uint8_t> temp(_tcp_rx_buf.begin(), _tcp_rx_buf.begin() + _tcp_rx_bytes);
     // only add to tcp_rx queue if data is not empty and not ping response
     if(!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
+    // don't check for new packets too often
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
+
 }
 
 void CZoomyClient::tcp_tx() {
@@ -407,14 +409,13 @@ void CZoomyClient::tcp_tx() {
 //        spdlog::info("Sending" + std::string(_tcp_tx_queue.front().begin(), _tcp_tx_queue.front().end()));
         _tcp_client.do_tx(_tcp_tx_queue.front());
     }
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
 }
 
 void CZoomyClient::update_tcp() {
     if(!_tcp_client.get_socket_status()) {
         if (_tcp_req_ready) {
             _tcp_client.setup(_tcp_host,_tcp_port);
-
             _tcp_send_data = _tcp_client.get_socket_status();
 
             // start listen thread
@@ -430,7 +431,8 @@ void CZoomyClient::update_tcp() {
         for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
 
 //            // acknowledge next data in queue
-//            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+
             // if big data (image)
             if (_tcp_rx_queue.front().size() > 100) {
                 cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
@@ -443,7 +445,7 @@ void CZoomyClient::update_tcp() {
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
         payload = "G 1";
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
-        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
     }
 }
 
