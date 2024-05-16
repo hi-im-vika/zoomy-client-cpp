@@ -4,6 +4,7 @@
 
 #include <opencv2/opencv_modules.hpp>
 #include <opencv2/opencv.hpp>
+#include <spdlog/spdlog.h>
 #include "thread"
 #include "vector"
 
