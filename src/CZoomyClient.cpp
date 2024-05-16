@@ -125,6 +125,9 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 //    // net init
 //    // TODO: thread network update separately from
 
+    _udp_req_ready = false;
+    _tcp_req_ready = false;
+
     // start udp update thread
     _thread_update_udp = std::thread(thread_update_udp, this);
     _thread_update_udp.detach();
