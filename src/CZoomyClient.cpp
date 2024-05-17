@@ -44,6 +44,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     }
 
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    _dpad = {0, 0, 0, 0};
 
     // dear imgui init
     // Decide GL+GLSL versions
@@ -102,8 +103,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     // OpenCV init
 
-    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
-//    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
@@ -291,6 +292,10 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
                 _values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
+                _dpad.at(dpad_btn_type::DPAD_UP) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_DPAD_UP);
+                _dpad.at(dpad_btn_type::DPAD_DOWN) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+                _dpad.at(dpad_btn_type::DPAD_LEFT) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+                _dpad.at(dpad_btn_type::DPAD_RIGHT) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
                 break;
             case SDL_CONTROLLERAXISMOTION:
                 _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
@@ -380,6 +385,11 @@ void CZoomyClient::draw() {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
+    ss.str("");
+    for (auto &i: _dpad) {
+        ss << i << " ";
+    }
+    ImGui::Text("%s", ("DPad values: " + ss.str()).c_str());
 
     // opencv parameters
     ImGui::SeparatorText("OpenCV");
