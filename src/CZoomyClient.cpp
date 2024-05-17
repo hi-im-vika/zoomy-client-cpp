@@ -581,7 +581,7 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 int main(int argc, char *argv[]) {
-    CZoomyClient c = CZoomyClient(cv::Size(854, 480));
+    CZoomyClient c = CZoomyClient(cv::Size(1280,720));
     c.run();
     return 0;
 }
