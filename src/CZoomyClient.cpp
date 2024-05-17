@@ -391,12 +391,12 @@ void CZoomyClient::draw() {
     ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     viewport_ratio = viewport_size.x / viewport_size.y;
 
-    if (_autonomous.isRunning()) {
-        cv::Mat temp_img = _autonomous.get_masked_image();
-        mat_to_tex(temp_img, _arena_tex);
-    } else {
+//    if (_autonomous.isRunning()) {
+//        cv::Mat temp_img = _autonomous.get_masked_image();
+//        mat_to_tex(temp_img, _arena_tex);
+//    } else {
         mat_to_tex(_arena_raw_img, _arena_tex);
-    }
+//    }
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
