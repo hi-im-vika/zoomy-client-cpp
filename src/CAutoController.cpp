@@ -65,8 +65,8 @@ void CAutoController::runToPoint() {
 
 //        _imgLock.lock();
         cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
-//        cv::dilate(_above, _above, cv::Mat());
-        cv::inRange(_above, HSV_L, HSV_H, _above);
+        cv::dilate(_above, _above, cv::Mat());
+        cv::inRange(_above, _hsv_threshold_low, _hsv_threshold_high, _above);
 //        _above.convertTo(_above, CV_8UC1);
 //        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 //        _imgLock.unlock();
