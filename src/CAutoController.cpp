@@ -59,10 +59,14 @@ void CAutoController::runToPoint() {
         std::vector<cv::Vec4i> hierarchy;
         std::vector<std::vector<cv::Point>> contours;
         std::vector<cv::Point> contour;
+
+        _imgLock.lock();
         cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
-        cv::inRange(_above, HSV_L, HSV_H, _above);
         cv::dilate(_above, _above, cv::Mat());
+        cv::inRange(_above, HSV_L, HSV_H, _above);
+        _above.convertTo(_above, CV_8UC1);
         cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        _imgLock.unlock();
 
         int biggest = 0;
         cv::Rect car;
