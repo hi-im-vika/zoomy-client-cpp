@@ -413,13 +413,14 @@ void CZoomyClient::draw() {
     ImGui::End();
 
     ImGui::Begin("Waypoints");
-    ImGui::BeginTable("##waypoints",4,(ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders));
+    ImGui::BeginTable("##waypoints", 4,
+                      (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders));
     ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
-    for (auto &i : _waypoints) {
+    for (auto &i: _waypoints) {
         ImGui::TableNextRow();
         // X
         ImGui::TableSetColumnIndex(0);
@@ -431,12 +432,12 @@ void CZoomyClient::draw() {
 
         // Speed
         ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%d",i.speed);
+        ImGui::Text("%d", i.speed);
 
         // Rotation
         ImGui::TableSetColumnIndex(3);
         ImGui::PushItemWidth(-FLT_MIN);
-        ImGui::Text("%d",i.rotation);
+        ImGui::Text("%d", i.rotation);
         ImGui::PopItemWidth();
     }
     ImGui::EndTable();
@@ -483,7 +484,7 @@ void CZoomyClient::draw() {
 //        cv::Mat temp_img = _autonomous.get_masked_image();
 //        mat_to_tex(temp_img, _arena_tex);
 //    } else {
-        mat_to_tex(_arena_raw_img, _arena_tex);
+    mat_to_tex(_arena_raw_img, _arena_tex);
 //    }
 
     // Scale the image horizontally if the content region is wider than the image
