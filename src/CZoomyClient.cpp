@@ -316,7 +316,7 @@ void CZoomyClient::draw() {
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
-    ImGui::Checkbox("Rotate 180",&_flip_image);
+    ImGui::Checkbox("Rotate dashcam 180",&_flip_image);
     ImGui::EndGroup();
 
     std::stringstream ss;
