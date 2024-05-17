@@ -19,6 +19,7 @@ private:
     cv::Point _destination;
     int _target;
     int _speed;
+    std::mutex _imgLock;
 
     static void autoTargetThread(CAutoController* ptr);
 

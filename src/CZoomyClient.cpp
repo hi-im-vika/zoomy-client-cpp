@@ -187,29 +187,29 @@ void CZoomyClient::update() {
                 _step++;
                 break;
             case 4:
-                _autonomous.startRunToPoint(cv::Point(127, 138), 13500);
+                _autonomous.startRunToPoint(cv::Point(137, 138), 13500);
                 _values.at(value_type::GC_LTRIG) = 90;
                 _step++;
                 break;
             case 5:
-                _autonomous.startRunToPoint(cv::Point(327, 105), 14000);
+                _autonomous.startRunToPoint(cv::Point(327, 125), 14000);
                 _step++;
                 break;
             case 6:
-                _autonomous.startRunToPoint(cv::Point(467, 147), 14000);
+                _autonomous.startRunToPoint(cv::Point(511, 147), 14000);
                 _values.at(value_type::GC_LTRIG) = 350;
                 _step++;
                 break;
             case 7:
-                _autonomous.startRunToPoint(cv::Point(556, 336), 12000);
+                _autonomous.startRunToPoint(cv::Point(525, 315), 12000);
                 _step++;
                 break;
             case 8:
-                _autonomous.startRunToPoint(cv::Point(561, 310), 12000);
+                _autonomous.startRunToPoint(cv::Point(572, 421), 12000);
                 _step++;
                 break;
             case 9:
-                _autonomous.startRunToPoint(cv::Point(572, 566), 12000);
+                _autonomous.startRunToPoint(cv::Point(572, 535), 12000);
                 _values.at(value_type::GC_LTRIG) = 270;
                 _step++;
                 break;
