@@ -90,6 +90,7 @@ void CAutoController::runToPoint() {
                 ((_speed / 32768.0) * _overheadImg->cols / 5)) {
             _threadExit[1] = true;
         }
+        //_threadExit[1] = true;
     }
 }
 
