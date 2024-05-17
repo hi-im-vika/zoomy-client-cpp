@@ -187,6 +187,7 @@ void CZoomyClient::update() {
     }
     if (_values.at(value_type::GC_B)) {
         _auto = false;
+        _values.at(value_type::GC_A) = 0;
         _autonomous.endAutoTarget();
         _autonomous.endRunToPoint();
     }
