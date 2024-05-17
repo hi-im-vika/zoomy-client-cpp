@@ -48,6 +48,7 @@ public:
         cv::Point coordinates;
         int speed;
         int rotation;
+        bool turret;
     };
 
     CAutoController();

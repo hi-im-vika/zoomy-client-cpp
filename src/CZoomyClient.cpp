@@ -142,52 +142,62 @@ CZoomyClient::CZoomyClient(cv::Size s) {
         CAutoController::waypoint {
             cv::Point(0,0),
             0,
-            0
+            0,
+            false
         },
         CAutoController::waypoint {
-                cv::Point(69,369),
+                cv::Point(96,369),
                 14000,
-                180
+                0,
+                false
         },
         CAutoController::waypoint {
-                cv::Point(225, 400),
+                cv::Point(232, 400),
                 12000,
-                210
+                330,
+                false
         },
         CAutoController::waypoint {
-                cv::Point(127, 286),
+                cv::Point(136, 262),
                 12000,
-                210
+                90,
+                false
         },
         CAutoController::waypoint {
                 cv::Point(137, 138),
                 13500,
-                90
+                70,
+                false
         },
         CAutoController::waypoint {
                 cv::Point(327, 125),
                 14000,
-                90
+                210,
+                false
         },
         CAutoController::waypoint {
                 cv::Point(511, 147),
                 14000,
-                350
+                180,
+                false
         },
         CAutoController::waypoint {
-                cv::Point(525, 315),
+                cv::Point(525, 350),
                 12000,
-                350
+                270,
+                false
         },
         CAutoController::waypoint {
-                cv::Point(572, 421),
+                cv::Point(585, 421),
                 12000,
-                350
+                180,
+                false
         },
         CAutoController::waypoint {
                 cv::Point(572, 535),
                 12000,
-                270
+                180,
+                false
         },
     };
 
@@ -251,6 +261,7 @@ void CZoomyClient::update() {
             default:
                 _autonomous.startRunToPoint(_waypoints.at(_step).coordinates, _waypoints.at(_step).speed);
                 _values.at(value_type::GC_LTRIG) = _waypoints.at(_step).rotation;
+                _values.at(value_type::GC_A) = _waypoints.at(_step).turret;
                 _step++;
                 break;
         }
