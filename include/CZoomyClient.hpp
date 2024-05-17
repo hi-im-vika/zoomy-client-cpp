@@ -62,6 +62,7 @@ private:
     SDL_GameController *_gc;
     bool _auto;
     std::string _xml_vals;
+    std::vector <cv::Point> _waypoints;
 
     // opencv
     cv::VideoCapture _video_capture;
