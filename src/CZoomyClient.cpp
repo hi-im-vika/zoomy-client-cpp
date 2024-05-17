@@ -138,67 +138,69 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
 
+    // smaller rot value = ccw, larger rot value = cw
     _waypoints = {
-        CAutoController::waypoint {
-            cv::Point(0,0),
-            0,
-            0,
-            false
-        },
-        CAutoController::waypoint {
-                cv::Point(96,369),
-                14000,
-                0,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(232, 400),
-                12000,
-                330,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(136, 262),
-                12000,
-                90,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(137, 138),
-                13500,
-                70,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(327, 125),
-                14000,
-                210,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(511, 147),
-                14000,
-                180,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(525, 350),
-                12000,
-                270,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(585, 421),
-                12000,
-                180,
-                false
-        },
-        CAutoController::waypoint {
-                cv::Point(572, 535),
-                12000,
-                180,
-                false
-        },
+            CAutoController::waypoint{     // WAYPOINT 0
+                    cv::Point(0, 0),
+                    0,
+                    0,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 1
+                    cv::Point(96, 369),
+                    14000,
+                    0,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
+                    cv::Point(245, 450),
+                    14000,
+                    342,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 3
+                    cv::Point(136, 262),
+                    15000,
+                    90,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 4
+                    cv::Point(137, 130),
+                    14000,
+                    70,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 5
+                    cv::Point(327, 115),
+                    14000,
+                    210,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 6
+                    cv::Point(511, 147),
+                    14000,
+                    180,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 7
+//                cv::Point(515, 350),
+                    cv::Point(458, 334),
+                    15000,
+                    270,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 8
+                    cv::Point(578, 421),
+                    14000,
+                    270,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 9
+                    cv::Point(572, 535),
+                    20000,
+                    270,
+                    false
+            },
     };
 
     // preallocate texture handle
