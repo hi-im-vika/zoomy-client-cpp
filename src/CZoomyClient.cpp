@@ -248,46 +248,9 @@ void CZoomyClient::update() {
             case 0:
                 _step++;
                 break;
-            case 1:
-                _autonomous.startRunToPoint(cv::Point(69, 369), 14000);
-                _values.at(value_type::GC_LTRIG) = 180;
-                _step++;
-                break;
-            case 2:
-                _autonomous.startRunToPoint(cv::Point(225, 400), 12000);
-                _values.at(value_type::GC_LTRIG) = 210;
-                _step++;
-                break;
-            case 3:
-                _autonomous.startRunToPoint(cv::Point(127, 286), 12000);
-                _values.at(value_type::GC_LTRIG) = 210;
-                _step++;
-                break;
-            case 4:
-                _autonomous.startRunToPoint(cv::Point(137, 138), 13500);
-                _values.at(value_type::GC_LTRIG) = 90;
-                _step++;
-                break;
-            case 5:
-                _autonomous.startRunToPoint(cv::Point(327, 125), 14000);
-                _step++;
-                break;
-            case 6:
-                _autonomous.startRunToPoint(cv::Point(511, 147), 14000);
-                _values.at(value_type::GC_LTRIG) = 350;
-                _step++;
-                break;
-            case 7:
-                _autonomous.startRunToPoint(cv::Point(525, 315), 12000);
-                _step++;
-                break;
-            case 8:
-                _autonomous.startRunToPoint(cv::Point(572, 421), 12000);
-                _step++;
-                break;
-            case 9:
-                _autonomous.startRunToPoint(cv::Point(572, 535), 12000);
-                _values.at(value_type::GC_LTRIG) = 270;
+            default:
+                _autonomous.startRunToPoint(_waypoints.at(_step).coordinates, _waypoints.at(_step).speed);
+                _values.at(value_type::GC_LTRIG) = _waypoints.at(_step).rotation;
                 _step++;
                 break;
         }
