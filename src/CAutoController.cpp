@@ -19,6 +19,8 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _carImg = car;
     _overheadImg = above;
     _masked_img = cv::Mat::ones(cv::Size(600,600), CV_8UC3);
+    _hsv_threshold_low = cv::Scalar_<int>(0,130,100);
+    _hsv_threshold_high = cv::Scalar_<int>(22,255,255);
     return true;
 }
 
