@@ -432,6 +432,33 @@ void CZoomyClient::draw() {
     ImGui::End();
 
     ImGui::Begin("Waypoints");
+    ImGui::BeginTable("##waypoints",4,(ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders));
+    ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    for (auto &i : _waypoints) {
+        ImGui::TableNextRow();
+        // X
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%d", i.coordinates.x);
+
+        // Y
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%d", i.coordinates.y);
+
+        // Speed
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%d",i.speed);
+
+        // Rotation
+        ImGui::TableSetColumnIndex(3);
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::Text("%d",i.rotation);
+        ImGui::PopItemWidth();
+    }
+    ImGui::EndTable();
     ImGui::End();
 
     // dashcam image
