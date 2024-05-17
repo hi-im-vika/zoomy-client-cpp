@@ -65,6 +65,9 @@ private:
     // opencv
     cv::VideoCapture _video_capture;
     bool _flip_image;
+    std::vector<std::string> _hsv_slider_names;
+    cv::Scalar_<int> _hsv_threshold_low, _hsv_threshold_high;
+    std::vector<int*> _pointer_hsv_thresholds;
 
     // opencv aruco
     std::vector<int> _marker_ids;
