@@ -138,6 +138,59 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
 
+    _waypoints = {
+        CAutoController::waypoint {
+            cv::Point(0,0),
+            0,
+            0
+        },
+        CAutoController::waypoint {
+                cv::Point(69,369),
+                14000,
+                180
+        },
+        CAutoController::waypoint {
+                cv::Point(225, 400),
+                12000,
+                210
+        },
+        CAutoController::waypoint {
+                cv::Point(127, 286),
+                12000,
+                210
+        },
+        CAutoController::waypoint {
+                cv::Point(137, 138),
+                13500,
+                90
+        },
+        CAutoController::waypoint {
+                cv::Point(327, 125),
+                14000,
+                90
+        },
+        CAutoController::waypoint {
+                cv::Point(511, 147),
+                14000,
+                350
+        },
+        CAutoController::waypoint {
+                cv::Point(525, 315),
+                12000,
+                350
+        },
+        CAutoController::waypoint {
+                cv::Point(572, 421),
+                12000,
+                350
+        },
+        CAutoController::waypoint {
+                cv::Point(572, 535),
+                12000,
+                270
+        },
+    };
+
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
