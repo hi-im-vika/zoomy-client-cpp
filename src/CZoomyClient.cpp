@@ -135,9 +135,6 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
-    
-    spdlog::info("HSV LOW: {:d} {:d} {:d}", (int) _hsv_threshold_low.val[0], (int) _hsv_threshold_low.val[1], (int) _hsv_threshold_low.val[2]);
-    spdlog::info("HSV HIGH: {:d} {:d} {:d}", (int) _hsv_threshold_high.val[0], (int) _hsv_threshold_high.val[1], (int) _hsv_threshold_high.val[2]);
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
