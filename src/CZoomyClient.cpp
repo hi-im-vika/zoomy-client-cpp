@@ -14,7 +14,7 @@
  #define TCP_DELAY 30
 //#define TCP_DELAY 15 // only if over ssh forwarding
 
-CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
+CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
 
     // SDL init
@@ -586,12 +586,7 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: client <host> <port>" << std::endl;
-        return 1;
-    }
-
-    CZoomyClient c = CZoomyClient(cv::Size(854, 480), argv[1], argv[2]);
+    CZoomyClient c = CZoomyClient(cv::Size(854, 480));
     c.run();
     return 0;
 }

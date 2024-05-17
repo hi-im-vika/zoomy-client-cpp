@@ -106,7 +106,7 @@ private:
     void tcp_tx();
 
 public:
-    CZoomyClient(cv::Size s, std::string host, std::string port);
+    CZoomyClient(cv::Size s);
     ~CZoomyClient();
 
     void update() override;
