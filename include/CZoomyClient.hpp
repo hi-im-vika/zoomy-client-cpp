@@ -52,6 +52,7 @@ private:
     cv::Mat _arena_img, _arena_raw_img;
     SDL_Event _evt;
     std::mutex _lockout_dashcam, _lockout_arena;
+    ImVec2 _arena_mouse_pos;
 
     // control
     CAutoController _autonomous;
@@ -61,6 +62,7 @@ private:
     SDL_GameController *_gc;
     bool _auto;
     std::string _xml_vals;
+    std::vector <CAutoController::waypoint> _waypoints;
 
     // opencv
     cv::VideoCapture _video_capture;

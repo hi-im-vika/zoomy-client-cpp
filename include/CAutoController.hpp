@@ -44,6 +44,13 @@ public:
         ROTATE,
     };
 
+    struct waypoint {
+        cv::Point coordinates;
+        int speed;
+        int rotation;
+        bool turret;
+    };
+
     CAutoController();
 
     ~CAutoController();
