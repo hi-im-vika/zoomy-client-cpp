@@ -107,6 +107,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
+    _arena_mouse_pos = ImVec2(0, 0);
     _hsv_slider_names = {
             "Hue (lower)",
             "Hue (upper)",
@@ -429,24 +430,45 @@ void CZoomyClient::draw() {
     }
 
     // Scale the image horizontally if the content region is wider than the image
+    float pos_x = 0.0f;
+    float pos_y = 0.0f;
+    float scaled_size = 0.0f;
+    float how_much_to_scale_coordinates = 0.0f;
     if (viewport_ratio > ratio) {
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        pos_x = ImGui::GetCursorScreenPos().x;
+        pos_y = ImGui::GetCursorScreenPos().y;
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
+        scaled_size = imageWidth;
+        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
     }
         // Scale the image vertically if the content region is taller than the image
     else {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        pos_x = ImGui::GetCursorScreenPos().x;
+        pos_y = ImGui::GetCursorScreenPos().y;
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
+        scaled_size = imageHeight;
+        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
     }
+
+    if (ImGui::IsItemHovered()) {
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - pos_x) * how_much_to_scale_coordinates,
+                                        (ImGui::GetMousePos().y - pos_y) * how_much_to_scale_coordinates);
+        _arena_mouse_pos.x = arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
+        _arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+    }
+
     ImGui::End();
 
     // imgui window (for debug)
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
+    ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
 
     ImGui::End();
 
