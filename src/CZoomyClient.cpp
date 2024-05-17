@@ -9,6 +9,7 @@
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
 #define DEADZONE 2048
+#define ARENA_DIM 600
 
 // increase this value if malloc_error_break happens too often
  #define TCP_DELAY 30
