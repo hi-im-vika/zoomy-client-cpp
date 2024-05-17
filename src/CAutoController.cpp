@@ -135,3 +135,19 @@ bool CAutoController::isRunning() {
 cv::Mat CAutoController::get_masked_image() {
     return _masked_img;
 }
+
+cv::Scalar_<int> CAutoController::get_hsv_threshold_low() {
+    return _hsv_threshold_low;
+}
+
+cv::Scalar_<int> CAutoController::get_hsv_threshold_high() {
+    return _hsv_threshold_high;
+}
+
+void CAutoController::set_hsv_threshold_low(cv::Scalar_<int> &hsv_low) {
+    _hsv_threshold_low = hsv_low;
+}
+
+void CAutoController::set_hsv_threshold_high(cv::Scalar_<int> &hsv_high) {
+    _hsv_threshold_high = hsv_high;
+}
