@@ -529,22 +529,12 @@ void CZoomyClient::update_tcp() {
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     } else {
         for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
-
 //            // acknowledge next data in queue
             spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
-
-            // if big data (image)
-            if (_tcp_rx_queue.front().size() > 100) {
-                cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
-            } else {
-                // if small data (arena info)
-                _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
-            }
+            cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
         }
         std::string payload = "G 1";
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
-//        payload = "G 1";
-//        _tcp_tx_queue.emplace(payload.begin(), payload.end());
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
     }
 }
