@@ -267,12 +267,10 @@ void CZoomyClient::draw() {
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
                     _values.at(value_type::GC_LEFTX) = _joystick[0].x;
                     _values.at(value_type::GC_LEFTY) = _joystick[0].y;
-                }
-                else if (_auto) {
+                } else if (_auto) {
                     _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
                     _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
-                }
-                else {
+                } else {
                     _values.at(value_type::GC_LEFTX) = 0;
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
@@ -280,12 +278,10 @@ void CZoomyClient::draw() {
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
-                }
-                else if (_auto) {
+                } else if (_auto) {
                     _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
                     _values.at(value_type::GC_RIGHTY) = 0;
-                }
-                else {
+                } else {
                     _values.at(value_type::GC_RIGHTX) = 0;
                     _values.at(value_type::GC_RIGHTY) = 0;
                 }
@@ -320,7 +316,7 @@ void CZoomyClient::draw() {
     ImGui::Text("UDP Port:");
     ImGui::SameLine();
     ImGui::InputText("###udp_port_input", udp_port, 64);
-    if(ImGui::Button("Connect to UDP")) {
+    if (ImGui::Button("Connect to UDP")) {
         _udp_host = udp_host;
         _udp_port = udp_port;
         _udp_req_ready = true;
@@ -334,7 +330,7 @@ void CZoomyClient::draw() {
     ImGui::Text("TCP Port:");
     ImGui::SameLine();
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
-    if(ImGui::Button("Connect to TCP")) {
+    if (ImGui::Button("Connect to TCP")) {
         _tcp_host = tcp_host;
         _tcp_port = tcp_port;
         _tcp_req_ready = true;
@@ -342,11 +338,11 @@ void CZoomyClient::draw() {
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
-    ImGui::Checkbox("Rotate dashcam 180",&_flip_image);
+    ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::EndGroup();
 
     std::stringstream ss;
-    for (auto &i : _values) {
+    for (auto &i: _values) {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
@@ -355,7 +351,7 @@ void CZoomyClient::draw() {
     ImGui::SeparatorText("OpenCV");
     ImGui::Text("Markers: %ld", _marker_ids.size());
     ImGui::BeginGroup();
-    ImGui::BeginTable("##cal_item_table",2,ImGuiTableFlags_SizingFixedFit);
+    ImGui::BeginTable("##cal_item_table", 2, ImGuiTableFlags_SizingFixedFit);
     ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
     for (int i = 0; i < _hsv_slider_names.size(); i++) {
@@ -500,7 +496,7 @@ void CZoomyClient::udp_rx() {
     _udp_client.do_rx(_udp_rx_buf, _udp_rx_bytes);
     std::vector<uint8_t> temp(_udp_rx_buf.begin(), _udp_rx_buf.begin() + _udp_rx_bytes);
     // only add to udp_rx queue if data is not empty and not ping response
-    if(!temp.empty() && (temp.front() != '\6')) _udp_rx_queue.emplace(temp);
+    if (!temp.empty() && (temp.front() != '\6')) _udp_rx_queue.emplace(temp);
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
 }
 
@@ -513,10 +509,10 @@ void CZoomyClient::udp_tx() {
 }
 
 void CZoomyClient::update_udp() {
-    if(!_udp_client.get_socket_status()) {
+    if (!_udp_client.get_socket_status()) {
         if (_udp_req_ready) {
             _udp_client.ping();
-            _udp_client.setup(_udp_host,_udp_port);
+            _udp_client.setup(_udp_host, _udp_port);
 
             _udp_timeout_count = std::chrono::steady_clock::now();
             _udp_send_data = _udp_client.get_socket_status();
@@ -576,7 +572,7 @@ void CZoomyClient::tcp_rx() {
     _tcp_client.do_rx(_tcp_rx_buf, _tcp_rx_bytes);
     std::vector<uint8_t> temp(_tcp_rx_buf.begin(), _tcp_rx_buf.begin() + _tcp_rx_bytes);
     // only add to tcp_rx queue if data is not empty and not ping response
-    if(!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
+    if (!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
     // don't check for new packets too often
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
 
@@ -591,9 +587,9 @@ void CZoomyClient::tcp_tx() {
 }
 
 void CZoomyClient::update_tcp() {
-    if(!_tcp_client.get_socket_status()) {
+    if (!_tcp_client.get_socket_status()) {
         if (_tcp_req_ready) {
-            _tcp_client.setup(_tcp_host,_tcp_port);
+            _tcp_client.setup(_tcp_host, _tcp_port);
             _tcp_send_data = _tcp_client.get_socket_status();
 
             // start listen thread
@@ -654,7 +650,7 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 int main(int argc, char *argv[]) {
-    CZoomyClient c = CZoomyClient(cv::Size(1280,720));
+    CZoomyClient c = CZoomyClient(cv::Size(1280, 720));
     c.run();
     return 0;
 }
