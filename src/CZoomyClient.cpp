@@ -12,7 +12,7 @@
 #define ARENA_DIM 600
 
 // increase this value if malloc_error_break happens too often
- #define TCP_DELAY 30
+#define TCP_DELAY 30
 //#define TCP_DELAY 15 // only if over ssh forwarding
 
 CZoomyClient::CZoomyClient(cv::Size s) {
