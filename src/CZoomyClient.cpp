@@ -308,7 +308,8 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     // networking settings
-    ImGui::Begin("Connect", p_open);
+    ImGui::Begin("Settings", p_open);
+    ImGui::SeparatorText("Networking");
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "127.0.0.1";
@@ -351,6 +352,38 @@ void CZoomyClient::draw() {
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
 
+    // opencv parameters
+    ImGui::SeparatorText("OpenCV");
+    ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::BeginGroup();
+    ImGui::BeginTable("##cal_item_table",2,ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
+    for (int i = 0; i < _hsv_slider_names.size(); i++) {
+        if (i < 2) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 180);
+            ImGui::PopItemWidth();
+        } else {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 255);
+            ImGui::PopItemWidth();
+        }
+    }
+    ImGui::EndTable();
+    ImGui::EndGroup();
+
+    ImGui::End();
+
+    ImGui::Begin("Waypoints");
     ImGui::End();
 
     // dashcam image
@@ -411,36 +444,6 @@ void CZoomyClient::draw() {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
     }
-    ImGui::End();
-
-    // opencv parameters
-    ImGui::Begin("OpenCV Details", p_open);
-    ImGui::Text("Markers: %ld", _marker_ids.size());
-    ImGui::BeginGroup();
-    ImGui::BeginTable("##cal_item_table",2,ImGuiTableFlags_SizingFixedFit);
-    ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
-    ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
-    for (int i = 0; i < _hsv_slider_names.size(); i++) {
-        if (i < 2) {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
-            ImGui::TableSetColumnIndex(1);
-            ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 180);
-            ImGui::PopItemWidth();
-        } else {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
-            ImGui::TableSetColumnIndex(1);
-            ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 255);
-            ImGui::PopItemWidth();
-        }
-    }
-    ImGui::EndTable();
-    ImGui::EndGroup();
     ImGui::End();
 
     // imgui window (for debug)
