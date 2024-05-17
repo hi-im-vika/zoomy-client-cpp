@@ -106,6 +106,22 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
+    _hsv_slider_names = {
+            "Hue (lower)",
+            "Hue (upper)",
+            "Saturation (lower)",
+            "Saturation (upper)",
+            "Value (lower)",
+            "Value (upper)",
+    };
+    _pointer_hsv_thresholds = {
+            &_hsv_threshold_low[0],
+            &_hsv_threshold_high[0],
+            &_hsv_threshold_low[1],
+            &_hsv_threshold_high[1],
+            &_hsv_threshold_low[2],
+            &_hsv_threshold_high[2],
+    };
 
     // control init
     if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
