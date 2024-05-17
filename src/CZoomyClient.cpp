@@ -101,8 +101,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     // OpenCV init
 
-//    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
-    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
+    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
