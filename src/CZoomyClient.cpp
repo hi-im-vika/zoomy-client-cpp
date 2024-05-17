@@ -324,7 +324,6 @@ void CZoomyClient::draw() {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
-    ImGui::Text("Last rx for TCP: %s", _xml_vals.c_str());
 
     ImGui::End();
 
