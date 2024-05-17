@@ -35,6 +35,8 @@ private:
     cv::aruco::Dictionary _dictionary;
     cv::aruco::ArucoDetector _detector;
 
+    cv::Scalar _hsv_threshold_low, _hsv_threshold_high;
+
 public:
     enum controlType {
         MOVE_X,
