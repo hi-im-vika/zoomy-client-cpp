@@ -41,6 +41,13 @@ enum value_type {
     GC_Y,
 };
 
+enum dpad_btn_type {
+    DPAD_UP,
+    DPAD_DOWN,
+    DPAD_LEFT,
+    DPAD_RIGHT
+};
+
 class CZoomyClient : public CCommonBase {
 private:
     // imgui
@@ -58,6 +65,7 @@ private:
     CAutoController _autonomous;
     unsigned int _step;
     std::vector<int> _values;
+    std::vector<int> _dpad;
     std::vector<cv::Point> _joystick;
     SDL_GameController *_gc;
     bool _auto;
