@@ -260,10 +260,14 @@ void CZoomyClient::update() {
                 _step++;
                 break;
             default:
-                _autonomous.startRunToPoint(_waypoints.at(_step).coordinates, _waypoints.at(_step).speed);
-                _values.at(value_type::GC_LTRIG) = _waypoints.at(_step).rotation;
-                _values.at(value_type::GC_A) = _waypoints.at(_step).turret;
-                _step++;
+                if (_step < _waypoints.size()) {
+                    _autonomous.startRunToPoint(_waypoints.at(_step).coordinates, _waypoints.at(_step).speed);
+                    _values.at(value_type::GC_LTRIG) = _waypoints.at(_step).rotation;
+                    _values.at(value_type::GC_A) = _waypoints.at(_step).turret;
+                    _step++;
+                } else {
+                    _auto = false;
+                }
                 break;
         }
     }
