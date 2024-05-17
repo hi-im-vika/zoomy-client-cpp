@@ -282,6 +282,7 @@ void CZoomyClient::draw() {
 
     ImGui::DockSpaceOverViewport();
 
+    // networking settings
     ImGui::Begin("Connect", p_open);
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
@@ -327,6 +328,7 @@ void CZoomyClient::draw() {
 
     ImGui::End();
 
+    // dashcam image
     ImGui::Begin("Dashcam", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
@@ -355,6 +357,7 @@ void CZoomyClient::draw() {
     _lockout_dashcam.unlock();
     ImGui::End();
 
+    // arena image
     ImGui::Begin("Arena", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
@@ -385,10 +388,12 @@ void CZoomyClient::draw() {
     }
     ImGui::End();
 
+    // opencv parameters
     ImGui::Begin("OpenCV Details", p_open);
     ImGui::Text("Markers: %ld", _marker_ids.size());
     ImGui::End();
 
+    // imgui window (for debug)
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
 
