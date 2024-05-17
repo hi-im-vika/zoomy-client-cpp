@@ -198,45 +198,52 @@ void CZoomyClient::update() {
                 _step++;
                 break;
             case 1:
-                _autonomous.startRunToPoint(cv::Point(69, 369), 14000);
-                _values.at(value_type::GC_LTRIG) = 180;
+                _autonomous.startRunToPoint(cv::Point(96, 369), 14000);
+                _values.at(value_type::GC_LTRIG) = 0;
                 _step++;
                 break;
             case 2:
-                _autonomous.startRunToPoint(cv::Point(225, 400), 12000);
-                _values.at(value_type::GC_LTRIG) = 210;
+                _autonomous.startRunToPoint(cv::Point(232, 400), 12500);
+                _values.at(value_type::GC_LTRIG) = 330;
+                _values.at(value_type::GC_A) = 1;
                 _step++;
                 break;
             case 3:
-                _autonomous.startRunToPoint(cv::Point(127, 286), 12000);
-                _values.at(value_type::GC_LTRIG) = 210;
+                _autonomous.startRunToPoint(cv::Point(136, 262), 13500);
+                _values.at(value_type::GC_LTRIG) = 90;
                 _step++;
                 break;
             case 4:
                 _autonomous.startRunToPoint(cv::Point(137, 138), 13500);
-                _values.at(value_type::GC_LTRIG) = 90;
+                _values.at(value_type::GC_LTRIG) = 70;
+                _values.at(value_type::GC_A) = 0;
                 _step++;
                 break;
             case 5:
                 _autonomous.startRunToPoint(cv::Point(327, 125), 14000);
+                _values.at(value_type::GC_LTRIG) = 210;
+                _values.at(value_type::GC_A) = 1;
                 _step++;
                 break;
             case 6:
                 _autonomous.startRunToPoint(cv::Point(511, 147), 14000);
-                _values.at(value_type::GC_LTRIG) = 350;
+                _values.at(value_type::GC_LTRIG) = 180;
                 _step++;
                 break;
             case 7:
-                _autonomous.startRunToPoint(cv::Point(525, 315), 12000);
+                _autonomous.startRunToPoint(cv::Point(525, 350), 12000);
+                _values.at(value_type::GC_LTRIG) = 270;
                 _step++;
                 break;
             case 8:
-                _autonomous.startRunToPoint(cv::Point(572, 421), 12000);
+                _autonomous.startRunToPoint(cv::Point(585, 421), 14000);
+                _values.at(value_type::GC_LTRIG) = 180;
+                _values.at(value_type::GC_A) = 0;
                 _step++;
                 break;
             case 9:
                 _autonomous.startRunToPoint(cv::Point(572, 535), 12000);
-                _values.at(value_type::GC_LTRIG) = 270;
+                _values.at(value_type::GC_LTRIG) = 180;
                 _step++;
                 break;
         }
