@@ -163,6 +163,9 @@ CZoomyClient::~CZoomyClient() = default;
 void CZoomyClient::update() {
     _video_capture.read(_dashcam_raw_img);
 
+    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
+    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+
     if (_flip_image) {
         cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
     }
