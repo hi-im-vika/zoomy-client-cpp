@@ -63,4 +63,10 @@ public:
     bool isRunning();
 
     cv::Mat get_masked_image();
+
+    cv::Scalar_<int> get_hsv_threshold_low();
+    cv::Scalar_<int> get_hsv_threshold_high();
+
+    void set_hsv_threshold_low(cv::Scalar_<int> &hsv_low);
+    void set_hsv_threshold_high(cv::Scalar_<int> &hsv_high);
 };
