@@ -416,6 +416,31 @@ void CZoomyClient::draw() {
     // opencv parameters
     ImGui::Begin("OpenCV Details", p_open);
     ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::BeginGroup();
+    ImGui::BeginTable("##cal_item_table",2,ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
+    for (int i = 0; i < _hsv_slider_names.size(); i++) {
+        if (i < 2) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 180);
+            ImGui::PopItemWidth();
+        } else {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 255);
+            ImGui::PopItemWidth();
+        }
+    }
+    ImGui::EndTable();
+    ImGui::EndGroup();
     ImGui::End();
 
     // imgui window (for debug)
