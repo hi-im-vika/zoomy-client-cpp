@@ -9,6 +9,10 @@
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
 
+// increase this value if malloc_error_break happens too often
+ #define TCP_DELAY 30
+//#define TCP_DELAY 15 // only if over ssh forwarding
+
 CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     _window_size = s;
 
@@ -37,7 +41,6 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
         }
     }
 
-    _steering_trim = _throttle_trim = 0;
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
 
     // dear imgui init
@@ -78,9 +81,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
 
-    io.ConfigFlags |=
-            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable;
-//    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigDockingTransparentPayload = true;
 
     // scale fonts for DPI
@@ -100,6 +101,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
     // OpenCV init
 
     _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
@@ -139,7 +141,6 @@ void CZoomyClient::update() {
     }
     if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
     _dashcam_img = _dashcam_raw_img;
-    _arena_img = _arena_raw_img;
 }
 
 void CZoomyClient::draw() {
@@ -160,14 +161,10 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
-                if (_do_invert_steering) {
-                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim) * -1, _steering_trim);
-                } else {
-                    _values.at(value_type::GC_LEFTX) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX) + _steering_trim), _steering_trim);
-                }
+                _values.at(value_type::GC_LEFTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
                 _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
                 _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
-                _values.at(value_type::GC_RIGHTY) = normalize_with_trim((SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY) + _throttle_trim), _throttle_trim);
+                _values.at(value_type::GC_RIGHTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
                 _values.at(value_type::GC_LTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
                 break;
@@ -186,7 +183,10 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     ImGui::Begin("Connect", p_open);
-    static char udp_host[64], udp_port[64], tcp_host[64], tcp_port[64];
+    static char udp_host[64] = "192.168.1.104";
+    static char udp_port[64] = "46188";
+    static char tcp_host[64] = "127.0.0.1";
+    static char tcp_port[64] = "4006";
     ImGui::BeginDisabled(_udp_req_ready);
     ImGui::Text("UDP Host:");
     ImGui::SameLine();
@@ -263,8 +263,7 @@ void CZoomyClient::draw() {
     ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     viewport_ratio = viewport_size.x / viewport_size.y;
 
-    _lockout_arena.lock();
-    mat_to_tex(_arena_img, _arena_tex);
+    mat_to_tex(_arena_raw_img, _arena_tex);
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
@@ -280,8 +279,6 @@ void CZoomyClient::draw() {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
     }
-
-    _lockout_arena.unlock();
     ImGui::End();
 
     ImGui::Begin("OpenCV Details", p_open);
@@ -398,7 +395,9 @@ void CZoomyClient::tcp_rx() {
     std::vector<uint8_t> temp(_tcp_rx_buf.begin(), _tcp_rx_buf.begin() + _tcp_rx_bytes);
     // only add to tcp_rx queue if data is not empty and not ping response
     if(!temp.empty() && (temp.front() != '\6')) _tcp_rx_queue.emplace(temp);
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1));
+    // don't check for new packets too often
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
+
 }
 
 void CZoomyClient::tcp_tx() {
@@ -406,14 +405,13 @@ void CZoomyClient::tcp_tx() {
 //        spdlog::info("Sending" + std::string(_tcp_tx_queue.front().begin(), _tcp_tx_queue.front().end()));
         _tcp_client.do_tx(_tcp_tx_queue.front());
     }
-    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+    std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
 }
 
 void CZoomyClient::update_tcp() {
     if(!_tcp_client.get_socket_status()) {
         if (_tcp_req_ready) {
             _tcp_client.setup(_tcp_host,_tcp_port);
-
             _tcp_send_data = _tcp_client.get_socket_status();
 
             // start listen thread
@@ -429,27 +427,21 @@ void CZoomyClient::update_tcp() {
         for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
 
 //            // acknowledge next data in queue
-//            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+            spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
+
             // if big data (image)
             if (_tcp_rx_queue.front().size() > 100) {
-                int time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now() - _tcp_last_frame).count();
-                if (time) {
-                    spdlog::info("FPS: {:03.2f}", 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::steady_clock::now() - _tcp_last_frame).count());
-                }
-                cv::imdecode(_tcp_rx_queue.front(),cv::IMREAD_COLOR,&_arena_raw_img);
-                _tcp_last_frame = std::chrono::steady_clock::now();
+                cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
             } else {
                 // if small data (arena info)
                 _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
             }
         }
-        std::string payload = "G 0";
+        std::string payload = "G 1";
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
-        payload = "G 1";
-        _tcp_tx_queue.emplace(payload.begin(), payload.end());
-        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
+//        payload = "G 1";
+//        _tcp_tx_queue.emplace(payload.begin(), payload.end());
+        std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
     }
 }
 
@@ -487,17 +479,6 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
-}
-
-int CZoomyClient::normalize_with_trim(int i, int trim) {
-    int mult = i > 0 ? 1 : -1;
-    int locked_range = 32767 - trim;
-    int raw = i - trim;
-    if ((locked_range - abs(raw)) < 0) {
-        return (mult * locked_range) + trim;
-    } else {
-        return i;
-    }
 }
 
 int main(int argc, char *argv[]) {
