@@ -390,6 +390,7 @@ void CZoomyClient::draw() {
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
+    ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::EndGroup();
 
@@ -462,7 +463,11 @@ void CZoomyClient::draw() {
     ImGui::End();
 
     // dashcam image
-    ImGui::Begin("Dashcam", p_open);
+    ImGui::Begin("Dashcam", p_open, ImGuiWindowFlags_MenuBar);
+    if (ImGui::BeginMenuBar()) {
+        ImGui::MenuItem(_use_dashcam ? _dashcam_gst_string.c_str() : "none",nullptr,false,false);
+        ImGui::EndMenuBar();
+    }
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
