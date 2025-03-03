@@ -28,20 +28,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     std::stringstream ss;
 
-    // control init
-
-    int joysticks = SDL_NumJoysticks();
-    if (!joysticks) {
-        spdlog::warn("No controllers detected.");
-    } else {
-        for (int i = 0; i < joysticks; i++) {
-            if (SDL_IsGameController(i)) {
-                _gc = SDL_GameControllerOpen(i);
-                ss << "Game controller " << i << " opened.";
-                spdlog::info(ss.str());
-            }
-        }
-    }
+//    // control init
 
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -303,6 +290,12 @@ void CZoomyClient::draw() {
                 spdlog::info("Quit");
                 _do_exit = true;
                 break;
+            case SDL_CONTROLLERDEVICEADDED:
+                spdlog::info("GC added");
+                break;
+            case SDL_CONTROLLERDEVICEREMOVED:
+                spdlog::info("GC removed");
+                break;
             case SDL_CONTROLLERBUTTONDOWN:
             case SDL_CONTROLLERBUTTONUP:
                 //_values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
@@ -356,6 +349,36 @@ void CZoomyClient::draw() {
 
     // networking settings
     ImGui::Begin("Settings", p_open);
+    ImGui::SeparatorText("Controls");
+//    ImGui::Text("Choose gamepad:");
+//    int joysticks = SDL_NumJoysticks();
+//    std::vector<std::string> joystick_names;
+//
+//    if (joysticks) {
+//        for (int i = 0; i < joysticks; i++) {
+//            joystick_names.emplace_back(SDL_GameControllerNameForIndex(i));
+//        }
+//    }
+//
+//    int item_selected_idx = 0;
+//    std::string combo_preview_value = joysticks ? joystick_names.at(item_selected_idx) : "No gamepads connected";
+//
+//    if (!joysticks) ImGui::BeginDisabled();
+//
+//    if (ImGui::BeginCombo("##gpselect", combo_preview_value.c_str())) {
+//        for (int i = 0; i < joysticks; i++) {
+//            const bool is_selected = (item_selected_idx == i);
+//            if (ImGui::Selectable(SDL_GameControllerNameForIndex(i), is_selected))
+//                item_selected_idx = i;
+//                if (SDL_GameControllerGetAttached(SDL_GameControllerFrom))
+//            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+//            if (is_selected)
+//                ImGui::SetItemDefaultFocus();
+//        }
+//        ImGui::EndCombo();
+//    }
+//    if (!joysticks) ImGui::EndDisabled();
+
     ImGui::SeparatorText("Networking");
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
