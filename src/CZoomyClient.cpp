@@ -8,12 +8,13 @@
 
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
+#define DEADZONE 2048
 
 // increase this value if malloc_error_break happens too often
  #define TCP_DELAY 30
 //#define TCP_DELAY 15 // only if over ssh forwarding
 
-CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
+CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
 
     // SDL init
@@ -41,7 +42,7 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
         }
     }
 
-    _values = {0, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
+    _values = {0, 0, 0, 0, 180, 0, 0, 0, 0 ,0};
 
     // dear imgui init
     // Decide GL+GLSL versions
@@ -100,19 +101,53 @@ CZoomyClient::CZoomyClient(cv::Size s, std::string host, std::string port) {
 
     // OpenCV init
 
-    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
-//    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
+//    _video_capture = cv::VideoCapture("udpsrc port=5200 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink", cv::CAP_GSTREAMER);
+    _video_capture = cv::VideoCapture("videotestsrc ! appsink", cv::CAP_GSTREAMER);
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _flip_image = false;
+    _hsv_slider_names = {
+            "Hue (lower)",
+            "Hue (upper)",
+            "Saturation (lower)",
+            "Saturation (upper)",
+            "Value (lower)",
+            "Value (upper)",
+    };
+    _pointer_hsv_thresholds = {
+            &_hsv_threshold_low[0],
+            &_hsv_threshold_high[0],
+            &_hsv_threshold_low[1],
+            &_hsv_threshold_high[1],
+            &_hsv_threshold_low[2],
+            &_hsv_threshold_high[2],
+    };
+
+    // control init
+    if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
+        spdlog::error("Error during CAutoController init.");
+        exit(-1);
+    }
+    _auto = false;
+    _step = 0;
+
+    _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
+
+    _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
+    _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
+    
+    spdlog::info("HSV LOW: {:d} {:d} {:d}", (int) _hsv_threshold_low.val[0], (int) _hsv_threshold_low.val[1], (int) _hsv_threshold_low.val[2]);
+    spdlog::info("HSV HIGH: {:d} {:d} {:d}", (int) _hsv_threshold_high.val[0], (int) _hsv_threshold_high.val[1], (int) _hsv_threshold_high.val[2]);
 
     // preallocate texture handle
-
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
 
 //    // net init
 //    // TODO: thread network update separately from
+
+    _udp_req_ready = false;
+    _tcp_req_ready = false;
 
     // start udp update thread
     _thread_update_udp = std::thread(thread_update_udp, this);
@@ -128,6 +163,9 @@ CZoomyClient::~CZoomyClient() = default;
 void CZoomyClient::update() {
     _video_capture.read(_dashcam_raw_img);
 
+    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
+    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+
     if (_flip_image) {
         cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
     }
@@ -141,6 +179,67 @@ void CZoomyClient::update() {
     }
     if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
     _dashcam_img = _dashcam_raw_img;
+    //_arena_img = _arena_raw_img;
+
+    if (_values.at(value_type::GC_Y)) {
+        _auto = true;
+        _step = 0;
+    }
+    if (_values.at(value_type::GC_B)) {
+        _auto = false;
+        _autonomous.endAutoTarget();
+        _autonomous.endRunToPoint();
+    }
+
+    if (!_autonomous.isRunning() && _auto) {
+        switch (_step) {
+            case 0:
+                _step++;
+                break;
+            case 1:
+                _autonomous.startRunToPoint(cv::Point(69, 369), 14000);
+                _values.at(value_type::GC_LTRIG) = 180;
+                _step++;
+                break;
+            case 2:
+                _autonomous.startRunToPoint(cv::Point(225, 400), 12000);
+                _values.at(value_type::GC_LTRIG) = 210;
+                _step++;
+                break;
+            case 3:
+                _autonomous.startRunToPoint(cv::Point(127, 286), 12000);
+                _values.at(value_type::GC_LTRIG) = 210;
+                _step++;
+                break;
+            case 4:
+                _autonomous.startRunToPoint(cv::Point(137, 138), 13500);
+                _values.at(value_type::GC_LTRIG) = 90;
+                _step++;
+                break;
+            case 5:
+                _autonomous.startRunToPoint(cv::Point(327, 125), 14000);
+                _step++;
+                break;
+            case 6:
+                _autonomous.startRunToPoint(cv::Point(511, 147), 14000);
+                _values.at(value_type::GC_LTRIG) = 350;
+                _step++;
+                break;
+            case 7:
+                _autonomous.startRunToPoint(cv::Point(525, 315), 12000);
+                _step++;
+                break;
+            case 8:
+                _autonomous.startRunToPoint(cv::Point(572, 421), 12000);
+                _step++;
+                break;
+            case 9:
+                _autonomous.startRunToPoint(cv::Point(572, 535), 12000);
+                _values.at(value_type::GC_LTRIG) = 270;
+                _step++;
+                break;
+        }
+    }
 }
 
 void CZoomyClient::draw() {
@@ -161,11 +260,37 @@ void CZoomyClient::draw() {
                 _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
-                _values.at(value_type::GC_LEFTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
-                _values.at(value_type::GC_LEFTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
-                _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
-                _values.at(value_type::GC_RIGHTY) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
-                _values.at(value_type::GC_LTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+                _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
+                _joystick[0].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
+                _joystick[1].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
+                _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
+
+                if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
+                    _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                    _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                }
+                else if (_auto) {
+                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
+                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
+                }
+                else {
+                    _values.at(value_type::GC_LEFTX) = 0;
+                    _values.at(value_type::GC_LEFTY) = 0;
+                }
+
+                if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
+                    _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
+                    _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
+                }
+                else if (_auto) {
+                    _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                }
+                else {
+                    _values.at(value_type::GC_RIGHTX) = 0;
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                }
+
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
                 break;
             default:
@@ -182,6 +307,7 @@ void CZoomyClient::draw() {
 
     ImGui::DockSpaceOverViewport();
 
+    // networking settings
     ImGui::Begin("Connect", p_open);
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
@@ -216,7 +342,7 @@ void CZoomyClient::draw() {
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
-    ImGui::Checkbox("Rotate 180",&_flip_image);
+    ImGui::Checkbox("Rotate dashcam 180",&_flip_image);
     ImGui::EndGroup();
 
     std::stringstream ss;
@@ -224,10 +350,10 @@ void CZoomyClient::draw() {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
-    ImGui::Text("Last rx for TCP: %s", _xml_vals.c_str());
 
     ImGui::End();
 
+    // dashcam image
     ImGui::Begin("Dashcam", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
@@ -256,6 +382,7 @@ void CZoomyClient::draw() {
     _lockout_dashcam.unlock();
     ImGui::End();
 
+    // arena image
     ImGui::Begin("Arena", p_open);
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
@@ -263,7 +390,12 @@ void CZoomyClient::draw() {
     ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     viewport_ratio = viewport_size.x / viewport_size.y;
 
-    mat_to_tex(_arena_raw_img, _arena_tex);
+    if (_autonomous.isRunning()) {
+        cv::Mat temp_img = _autonomous.get_masked_image();
+        mat_to_tex(temp_img, _arena_tex);
+    } else {
+        mat_to_tex(_arena_raw_img, _arena_tex);
+    }
 
     // Scale the image horizontally if the content region is wider than the image
     if (viewport_ratio > ratio) {
@@ -281,10 +413,37 @@ void CZoomyClient::draw() {
     }
     ImGui::End();
 
+    // opencv parameters
     ImGui::Begin("OpenCV Details", p_open);
     ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::BeginGroup();
+    ImGui::BeginTable("##cal_item_table",2,ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
+    for (int i = 0; i < _hsv_slider_names.size(); i++) {
+        if (i < 2) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 180);
+            ImGui::PopItemWidth();
+        } else {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 255);
+            ImGui::PopItemWidth();
+        }
+    }
+    ImGui::EndTable();
+    ImGui::EndGroup();
     ImGui::End();
 
+    // imgui window (for debug)
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
 
@@ -425,22 +584,12 @@ void CZoomyClient::update_tcp() {
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     } else {
         for (; !_tcp_rx_queue.empty(); _tcp_rx_queue.pop()) {
-
 //            // acknowledge next data in queue
             spdlog::info("New in RX queue with size: " + std::to_string(_tcp_rx_queue.front().size()));
-
-            // if big data (image)
-            if (_tcp_rx_queue.front().size() > 100) {
-                cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
-            } else {
-                // if small data (arena info)
-                _xml_vals = std::string(_tcp_rx_queue.front().begin(), _tcp_rx_queue.front().end());
-            }
+            cv::imdecode(_tcp_rx_queue.front(), cv::IMREAD_UNCHANGED, &_arena_raw_img);
         }
         std::string payload = "G 1";
         _tcp_tx_queue.emplace(payload.begin(), payload.end());
-//        payload = "G 1";
-//        _tcp_tx_queue.emplace(payload.begin(), payload.end());
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(TCP_DELAY));
     }
 }
@@ -482,12 +631,7 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: client <host> <port>" << std::endl;
-        return 1;
-    }
-
-    CZoomyClient c = CZoomyClient(cv::Size(854, 480), argv[1], argv[2]);
+    CZoomyClient c = CZoomyClient(cv::Size(1280,720));
     c.run();
     return 0;
 }
