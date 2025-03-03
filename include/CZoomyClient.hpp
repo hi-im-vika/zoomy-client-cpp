@@ -47,6 +47,7 @@ private:
     std::unique_ptr<CWindow> _window;
     GLuint _dashcam_tex;
     GLuint _arena_tex;
+    bool _use_dashcam;
     cv::Mat _dashcam_area, _arena_area;
     cv::Mat _dashcam_img, _dashcam_raw_img;
     cv::Mat _arena_img, _arena_raw_img;
@@ -66,6 +67,7 @@ private:
 
     // opencv
     cv::VideoCapture _video_capture;
+    std::string _dashcam_gst_string;
     bool _flip_image;
     std::vector<std::string> _hsv_slider_names;
     cv::Scalar_<int> _hsv_threshold_low, _hsv_threshold_high;
