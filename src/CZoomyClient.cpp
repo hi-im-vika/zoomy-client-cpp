@@ -224,24 +224,43 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
-    _video_capture.read(_dashcam_raw_img);
 
-    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
-    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+    if (_use_dashcam) {
+        // if video capture not set up, connect here
+        if (!_video_capture.isOpened()) {
+            _dashcam_gst_string = "udpsrc port=5200 ! watchdog timeout=1000 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink";
+            // attempt to connect to udp source, timeout at 1 second
+            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+        }
 
-    if (_flip_image) {
-        cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
+        // if source still not opened (timeout reached), default source to videotestsrc
+        if (!_video_capture.isOpened()) {
+            spdlog::warn("Could not open gstreamer pipeline. Defaulting to videotestsrc");
+            _dashcam_gst_string = "videotestsrc ! appsink";
+            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+        }
+
+        _video_capture.read(_dashcam_raw_img);
+
+        _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
+        _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+
+        if (_flip_image) {
+            cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
+        }
+
+        if (!_dashcam_raw_img.empty()) {
+            _detector_params = cv::aruco::DetectorParameters();
+            _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+            _detector.setDetectorParameters(_detector_params);
+            _detector.setDictionary(_dictionary);
+            _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+        }
+        if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
+        _dashcam_img = _dashcam_raw_img;
+    } else {
+        _video_capture.release();
     }
-
-    if (!_dashcam_raw_img.empty()) {
-        _detector_params = cv::aruco::DetectorParameters();
-        _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-        _detector.setDetectorParameters(_detector_params);
-        _detector.setDictionary(_dictionary);
-        _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
-    }
-    if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
-    _dashcam_img = _dashcam_raw_img;
     //_arena_img = _arena_raw_img;
 
     if (_values.at(value_type::GC_Y)) {
