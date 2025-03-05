@@ -338,10 +338,10 @@ void CZoomyClient::draw() {
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
 
-                if (_angle > 359)
-                    _angle = 0;
-                else if (_angle < 0)
-                    _angle = 359;
+                if (_angle > 180)
+                    _angle = -179;
+                else if (_angle < -180)
+                    _angle = 179;
 
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
                     // look away this won't be pretty...
