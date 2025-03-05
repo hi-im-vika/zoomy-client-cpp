@@ -107,7 +107,7 @@ private:
     void mat_to_tex(cv::Mat &input, GLuint &output);
 
     std::chrono::steady_clock::time_point _deltaTime;
-    int _angle;
+    float _angle;
     bool _demo;
 
     void udp_rx();

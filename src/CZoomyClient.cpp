@@ -20,7 +20,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
     _angle = 0;
     _deltaTime = std::chrono::steady_clock::now();
-    _demo = false;
+    _demo = true;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
@@ -298,7 +298,7 @@ void CZoomyClient::update() {
 }
 
 void CZoomyClient::draw() {
-    int delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count();
+    float delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count() / 16.0;
     _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
@@ -331,21 +331,21 @@ void CZoomyClient::draw() {
                         _values.at(value_type::GC_LEFTY) = _joystick[0].y;
                     }
                 } else if (_auto) {
-                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X) * 0.5;
-                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y) * 0.5;
+                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
+                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
                 } else {
                     _values.at(value_type::GC_LEFTX) = 0;
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
 
-                if (_angle > 360)
-                    _angle -= 360;
-                else if (_angle < 0)
-                    _angle += 360;
+                if (_angle > 360.0)
+                    _angle -= 360.0;
+                else if (_angle < 0.0)
+                    _angle += 360.0;
 
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
                     // look away this won't be pretty...
-                    _angle += delta * _joystick[1].x / 327680.0;
+                    _angle += delta * _joystick[1].x / 32768.0;
                     // nevermind, doesn't look that bad
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
