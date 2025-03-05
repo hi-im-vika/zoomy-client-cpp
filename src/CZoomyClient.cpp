@@ -550,6 +550,8 @@ void CZoomyClient::draw() {
     ImGui::Begin("ImGui", p_open);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+    ImGui::SeparatorText("OpenCV Build Information");
+    ImGui::Text("%s", cv::getBuildInformation().c_str());
 
     ImGui::End();
 
