@@ -11,6 +11,7 @@
 #define DEADZONE 4096
 #define ARENA_DIM 600
 #define DEMO_SPEED 0.3
+#define DEMO_ROTATE 0.7
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 100
@@ -345,7 +346,10 @@ void CZoomyClient::draw() {
 
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
                     // look away this won't be pretty...
-                    _angle += delta * _joystick[1].x / 32768.0;
+                    if (_demo)
+                        _angle += DEMO_ROTATE * delta * _joystick[1].x / 32768.0;
+                    else
+                        _angle += delta * _joystick[1].x / 32768.0;
                     // nevermind, doesn't look that bad
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
