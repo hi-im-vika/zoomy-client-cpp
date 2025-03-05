@@ -227,6 +227,64 @@ CZoomyClient::~CZoomyClient() = default;
 
 void CZoomyClient::update() {
 
+    _waypoints = {
+            CAutoController::waypoint{     // WAYPOINT 0
+                    cv::Point(0, 0),
+                    0,
+                    0,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 1
+                    cv::Point(111, 260),
+                    _autospeed * 100,
+                    270,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
+                    cv::Point(167, 128),
+                    _autospeed * 100,
+                    315,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 3
+                    cv::Point(294, 97),
+                    _autospeed * 100,
+                    0,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 4
+                    cv::Point(441, 162),
+                    _autospeed * 100,
+                    45,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 5
+                    cv::Point(476, 264),
+                    _autospeed * 100,
+                    90,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 6
+//                cv::Point(515, 350),
+                    cv::Point(426, 371),
+                    _autospeed * 100,
+                    135,
+                    true
+            },
+            CAutoController::waypoint{     // WAYPOINT 7
+                    cv::Point(302, 427),
+                    _autospeed * 100,
+                    180,
+                    false
+            },
+            CAutoController::waypoint{     // WAYPOINT 8
+                    cv::Point(173, 380),
+                    _autospeed * 100,
+                    225,
+                    false
+            },
+    };
+
     if (_use_dashcam) {
         // if video capture not set up, connect here
         if (!_video_capture.isOpened()) {
