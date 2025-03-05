@@ -12,7 +12,6 @@
 #define ARENA_DIM 600
 #define DEMO_SPEED 0.3
 #define DEMO_ROTATE 0.7
-#define AUTO_SPEED 10000
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 100
@@ -23,6 +22,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _angle = 0;
     _deltaTime = std::chrono::steady_clock::now();
     _demo = true;
+    _autospeed = 128;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
@@ -120,6 +120,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             "Saturation (upper)",
             "Value (lower)",
             "Value (upper)",
+            "Autonomy  speed",
     };
     _pointer_hsv_thresholds = {
             &_hsv_threshold_low[0],
@@ -128,6 +129,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             &_hsv_threshold_high[1],
             &_hsv_threshold_low[2],
             &_hsv_threshold_high[2],
+            &_autospeed
     };
 
     // control init
@@ -153,50 +155,50 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             },
             CAutoController::waypoint{     // WAYPOINT 1
                     cv::Point(111, 260),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     270,
                     false
             },
             CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
                     cv::Point(167, 128),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     315,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 3
                     cv::Point(294, 97),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     0,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 4
                     cv::Point(441, 162),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     45,
                     false
             },
             CAutoController::waypoint{     // WAYPOINT 5
                     cv::Point(476, 264),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     90,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 6
 //                cv::Point(515, 350),
                     cv::Point(426, 371),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     135,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 7
                     cv::Point(302, 427),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     180,
                     false
             },
             CAutoController::waypoint{     // WAYPOINT 8
                     cv::Point(173, 380),
-                    AUTO_SPEED,
+                    _autospeed * 100,
                     225,
                     false
             },
