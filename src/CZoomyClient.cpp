@@ -268,7 +268,7 @@ void CZoomyClient::update() {
     }
     //_arena_img = _arena_raw_img;
 
-    if (_values.at(value_type::GC_Y)) {
+    if (_values.at(value_type::GC_Y) && !_demo) {
         _auto = true;
         _step = 0;
     }
@@ -299,7 +299,7 @@ void CZoomyClient::update() {
 }
 
 void CZoomyClient::draw() {
-    float delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count() / 16.0;
+    float delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count() / 18.0;
     _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
