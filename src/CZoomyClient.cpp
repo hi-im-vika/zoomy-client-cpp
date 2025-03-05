@@ -414,6 +414,7 @@ void CZoomyClient::draw() {
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
+    ImGui::Checkbox("Demo mode", &_demo);
     ImGui::EndGroup();
 
     std::stringstream ss;
