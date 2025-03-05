@@ -10,6 +10,7 @@
 #define NET_DELAY 35
 #define DEADZONE 2048
 #define ARENA_DIM 600
+#define DEMO_SPEED 0.3
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 100
@@ -17,6 +18,9 @@
 
 CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
+    _angle = 0;
+    _deltaTime = std::chrono::steady_clock::now();
+    _demo = false;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
@@ -294,7 +298,8 @@ void CZoomyClient::update() {
 }
 
 void CZoomyClient::draw() {
-
+    int delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count();
+    _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
         ImGui_ImplSDL2_ProcessEvent(&_evt);
@@ -317,17 +322,31 @@ void CZoomyClient::draw() {
                 _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
 
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
-                    _values.at(value_type::GC_LEFTX) = -_joystick[0].x;
-                    _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    if (_demo) {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x * DEMO_SPEED;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y * DEMO_SPEED;
+                    }
+                    else {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    }
                 } else if (_auto) {
-                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
-                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
+                    _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X) * 0.5;
+                    _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y) * 0.5;
                 } else {
                     _values.at(value_type::GC_LEFTX) = 0;
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
 
+                if (_angle > 359)
+                    _angle = 0;
+                else if (_angle < 0)
+                    _angle = 359;
+
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
+                    // look away this won't be pretty...
+                    _angle += delta * _joystick[1].x / 327680.0;
+                    // nevermind, doesn't look that bad
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
                 } else if (_auto) {
@@ -339,6 +358,9 @@ void CZoomyClient::draw() {
                 }
 
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+                if (!_auto) {
+                    _values.at(value_type::GC_LTRIG) = _angle;
+                }
                 break;
             default:
                 break;
