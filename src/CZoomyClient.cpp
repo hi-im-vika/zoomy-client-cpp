@@ -12,7 +12,7 @@
 #define ARENA_DIM 600
 
 // increase this value if malloc_error_break happens too often
-#define TCP_DELAY 30
+#define TCP_DELAY 100
 //#define TCP_DELAY 15 // only if over ssh forwarding
 
 CZoomyClient::CZoomyClient(cv::Size s) {
@@ -317,7 +317,7 @@ void CZoomyClient::draw() {
                 _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
 
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
-                    _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                    _values.at(value_type::GC_LEFTX) = -_joystick[0].x;
                     _values.at(value_type::GC_LEFTY) = _joystick[0].y;
                 } else if (_auto) {
                     _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
@@ -359,7 +359,7 @@ void CZoomyClient::draw() {
     ImGui::SeparatorText("Networking");
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
-    static char tcp_host[64] = "127.0.0.1";
+    static char tcp_host[64] = "192.168.1.156";
     static char tcp_port[64] = "4006";
     ImGui::BeginDisabled(_udp_req_ready);
     ImGui::Text("UDP Host:");
@@ -503,12 +503,12 @@ void CZoomyClient::draw() {
     ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     viewport_ratio = viewport_size.x / viewport_size.y;
 
-//    if (_autonomous.isRunning()) {
-//        cv::Mat temp_img = _autonomous.get_masked_image();
-//        mat_to_tex(temp_img, _arena_tex);
-//    } else {
+    if (_autonomous.isRunning()) {
+        cv::Mat temp_img = _autonomous.get_masked_image();
+        mat_to_tex(temp_img, _arena_tex);
+    } else {
     mat_to_tex(_arena_raw_img, _arena_tex);
-//    }
+    }
 
     // Scale the image horizontally if the content region is wider than the image
     float pos_x = 0.0f;
