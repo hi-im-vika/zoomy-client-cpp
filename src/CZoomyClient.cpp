@@ -22,7 +22,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _angle = 0;
     _deltaTime = std::chrono::steady_clock::now();
     _demo = true;
-    _autospeed = 128;
+    _autospeed = 164;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
