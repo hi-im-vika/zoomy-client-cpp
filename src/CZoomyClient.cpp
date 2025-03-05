@@ -12,7 +12,7 @@
 #define ARENA_DIM 600
 #define DEMO_SPEED 0.3
 #define DEMO_ROTATE 0.7
-#define AUTO_SPEED 12000
+#define AUTO_SPEED 10000
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 100
@@ -154,56 +154,50 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             CAutoController::waypoint{     // WAYPOINT 1
                     cv::Point(111, 260),
                     AUTO_SPEED,
-                    0,
+                    270,
                     false
             },
             CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
                     cv::Point(167, 128),
                     AUTO_SPEED,
-                    270,
+                    315,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 3
                     cv::Point(294, 97),
                     AUTO_SPEED,
-                    225,
+                    0,
                     true
             },
             CAutoController::waypoint{     // WAYPOINT 4
                     cv::Point(441, 162),
                     AUTO_SPEED,
-                    180,
+                    45,
                     false
             },
             CAutoController::waypoint{     // WAYPOINT 5
                     cv::Point(476, 264),
                     AUTO_SPEED,
-                    135,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 6
-                    cv::Point(476, 264),
-                    AUTO_SPEED,
                     90,
                     true
             },
-            CAutoController::waypoint{     // WAYPOINT 7
+            CAutoController::waypoint{     // WAYPOINT 6
 //                cv::Point(515, 350),
                     cv::Point(426, 371),
                     AUTO_SPEED,
-                    45,
+                    135,
                     true
             },
-            CAutoController::waypoint{     // WAYPOINT 8
+            CAutoController::waypoint{     // WAYPOINT 7
                     cv::Point(302, 427),
                     AUTO_SPEED,
-                    0,
+                    180,
                     false
             },
-            CAutoController::waypoint{     // WAYPOINT 9
+            CAutoController::waypoint{     // WAYPOINT 8
                     cv::Point(173, 380),
                     AUTO_SPEED,
-                    315,
+                    225,
                     false
             },
     };
@@ -292,7 +286,8 @@ void CZoomyClient::update() {
                     _values.at(value_type::GC_A) = _waypoints.at(_step).turret;
                     _step++;
                 } else {
-                    _auto = false;
+                    //_auto = false;
+                    _step = 1;
                 }
                 break;
         }
