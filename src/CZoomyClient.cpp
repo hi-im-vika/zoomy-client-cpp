@@ -29,7 +29,6 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     std::stringstream ss;
 
     // control init
-
     int joysticks = SDL_NumJoysticks();
     if (!joysticks) {
         spdlog::warn("No controllers detected.");
@@ -96,12 +95,10 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     CDPIHandler::set_global_font_scaling(&io);
 
     // rendering init
-
     ImGui_ImplSDL2_InitForOpenGL(_window->get_native_window(), _window->get_native_context());
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // OpenCV init
-
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
@@ -219,6 +216,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     // start tcp update thread
     _thread_update_tcp = std::thread(thread_update_tcp, this);
     _thread_update_tcp.detach();
+
 }
 
 CZoomyClient::~CZoomyClient() = default;
@@ -345,7 +343,6 @@ void CZoomyClient::draw() {
         }
     }
 
-    bool *p_open = nullptr;
     ImGuiIO &io = ImGui::GetIO();
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -362,18 +359,20 @@ void CZoomyClient::draw() {
 
     ImGui::Render();
 
+    // render ImGui with OpenGL
     glViewport(0, 0, static_cast<int>(io.DisplaySize.x), static_cast<int>(io.DisplaySize.y));
     glClearColor(0.5F, 0.5F, 0.5F, 1.00F);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
-        SDL_Window *backup_current_window{SDL_GL_GetCurrentWindow()};
-        SDL_GLContext backup_current_context{SDL_GL_GetCurrentContext()};
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-    }
+//    // update other viewports if multi-viewport enabled
+//    if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
+//        SDL_Window *backup_current_window{SDL_GL_GetCurrentWindow()};
+//        SDL_GLContext backup_current_context{SDL_GL_GetCurrentContext()};
+//        ImGui::UpdatePlatformWindows();
+//        ImGui::RenderPlatformWindowsDefault();
+//        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+//    }
 
     SDL_GL_SwapWindow(_window->get_native_window());
 
@@ -587,8 +586,10 @@ void CZoomyClient::imgui_draw_debug(CZoomyClient *who_called) {
     ImGui::Begin("ImGui", nullptr);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x, (int) who_called->_arena_mouse_pos.y);
+    ImGui::Text("Viewport %d %d", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
     ImGui::SeparatorText("OpenCV Build Information");
     ImGui::Text("%s", cv::getBuildInformation().c_str());
+    ImGui::ShowDemoWindow();
 
     ImGui::End();
 }
