@@ -107,8 +107,11 @@ private:
     // draw specific UI elements
     static void imgui_draw_settings(CZoomyClient *who_called);
     static void imgui_draw_waypoints(CZoomyClient *who_called);
+    static void imgui_draw_dashcam(CZoomyClient *who_called);
+    static void imgui_draw_arena(CZoomyClient *who_called);
+    static void imgui_draw_debug(CZoomyClient *who_called);
 
-    void mat_to_tex(cv::Mat &input, GLuint &output);
+    static void mat_to_tex(cv::Mat &input, GLuint &output);
 
     void udp_rx();
     void udp_tx();

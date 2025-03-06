@@ -356,100 +356,9 @@ void CZoomyClient::draw() {
 
     imgui_draw_settings(this);
     imgui_draw_waypoints(this);
-
-
-    // dashcam image
-    ImGui::Begin("Dashcam", p_open, ImGuiWindowFlags_MenuBar);
-    if (ImGui::BeginMenuBar()) {
-        ImGui::MenuItem(_use_dashcam ? _dashcam_gst_string.c_str() : "none",nullptr,false,false);
-        ImGui::EndMenuBar();
-    }
-
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) _dashcam_img.cols) / ((float) _dashcam_img.rows);
-    float viewport_ratio = viewport_size.x / viewport_size.y;
-
-    _lockout_dashcam.lock();
-    mat_to_tex(_dashcam_img, _dashcam_tex);
-
-    // Scale the image horizontally if the content region is wider than the image
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(imageWidth, viewport_size.y));
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(viewport_size.x, imageHeight));
-    }
-
-    _lockout_dashcam.unlock();
-    ImGui::End();
-
-    // arena image
-    ImGui::Begin("Arena", p_open);
-
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    viewport_size = ImGui::GetContentRegionAvail();
-    ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
-    viewport_ratio = viewport_size.x / viewport_size.y;
-
-//    if (_autonomous.isRunning()) {
-//        cv::Mat temp_img = _autonomous.get_masked_image();
-//        mat_to_tex(temp_img, _arena_tex);
-//    } else {
-    mat_to_tex(_arena_raw_img, _arena_tex);
-//    }
-
-    // Scale the image horizontally if the content region is wider than the image
-    float pos_x = 0.0f;
-    float pos_y = 0.0f;
-    float scaled_size = 0.0f;
-    float how_much_to_scale_coordinates = 0.0f;
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        pos_x = ImGui::GetCursorScreenPos().x;
-        pos_y = ImGui::GetCursorScreenPos().y;
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
-        scaled_size = imageWidth;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        pos_x = ImGui::GetCursorScreenPos().x;
-        pos_y = ImGui::GetCursorScreenPos().y;
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
-        scaled_size = imageHeight;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
-
-    if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - pos_x) * how_much_to_scale_coordinates,
-                                        (ImGui::GetMousePos().y - pos_y) * how_much_to_scale_coordinates);
-        _arena_mouse_pos.x = arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
-        _arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-    }
-
-    ImGui::End();
-
-    // imgui window (for debug)
-    ImGui::Begin("ImGui", p_open);
-    ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
-    ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
-    ImGui::SeparatorText("OpenCV Build Information");
-    ImGui::Text("%s", cv::getBuildInformation().c_str());
-
-    ImGui::End();
+    imgui_draw_dashcam(this);
+    imgui_draw_arena(this);
+    imgui_draw_debug(this);
 
     ImGui::Render();
 
@@ -582,6 +491,105 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
         }
         ImGui::EndTable();
     }
+    ImGui::End();
+}
+
+void CZoomyClient::imgui_draw_dashcam(CZoomyClient *who_called) {
+// dashcam image
+    ImGui::Begin("Dashcam", nullptr, ImGuiWindowFlags_MenuBar);
+    if (ImGui::BeginMenuBar()) {
+        ImGui::MenuItem(who_called->_use_dashcam ? who_called->_dashcam_gst_string.c_str() : "none",nullptr,false,false);
+        ImGui::EndMenuBar();
+    }
+
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+    float ratio = ((float) who_called->_dashcam_img.cols) / ((float) who_called->_dashcam_img.rows);
+    float viewport_ratio = viewport_size.x / viewport_size.y;
+
+    who_called->_lockout_dashcam.lock();
+    mat_to_tex(who_called->_dashcam_img, who_called->_dashcam_tex);
+
+    // Scale the image horizontally if the content region is wider than the image
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        ImGui::Image((ImTextureID) (intptr_t) who_called->_dashcam_tex, ImVec2(imageWidth, viewport_size.y));
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        ImGui::Image((ImTextureID) (intptr_t) who_called->_dashcam_tex, ImVec2(viewport_size.x, imageHeight));
+    }
+
+    who_called->_lockout_dashcam.unlock();
+    ImGui::End();
+}
+
+void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
+    // arena image
+    ImGui::Begin("Arena", nullptr);
+
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+    float ratio = ((float) who_called->_arena_img.cols) / ((float) who_called->_arena_img.rows);
+    float viewport_ratio = viewport_size.x / viewport_size.y;
+
+//    if (_autonomous.isRunning()) {
+//        cv::Mat temp_img = _autonomous.get_masked_image();
+//        mat_to_tex(temp_img, _arena_tex);
+//    } else {
+    mat_to_tex(who_called->_arena_raw_img, who_called->_arena_tex);
+//    }
+
+    // Scale the image horizontally if the content region is wider than the image
+    float pos_x = 0.0f;
+    float pos_y = 0.0f;
+    float scaled_size = 0.0f;
+    float how_much_to_scale_coordinates = 0.0f;
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        pos_x = ImGui::GetCursorScreenPos().x;
+        pos_y = ImGui::GetCursorScreenPos().y;
+        ImGui::Image((ImTextureID) (intptr_t) who_called->_arena_tex, ImVec2(imageWidth, viewport_size.y));
+        scaled_size = imageWidth;
+        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        pos_x = ImGui::GetCursorScreenPos().x;
+        pos_y = ImGui::GetCursorScreenPos().y;
+        ImGui::Image((ImTextureID) (intptr_t) who_called->_arena_tex, ImVec2(viewport_size.x, imageHeight));
+        scaled_size = imageHeight;
+        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
+    }
+
+    if (ImGui::IsItemHovered()) {
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - pos_x) * how_much_to_scale_coordinates,
+                                        (ImGui::GetMousePos().y - pos_y) * how_much_to_scale_coordinates);
+        who_called->_arena_mouse_pos.x = arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
+        who_called->_arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+    }
+
+    ImGui::End();
+}
+
+void CZoomyClient::imgui_draw_debug(CZoomyClient *who_called) {
+    // imgui window (for debug)
+    ImGui::Begin("ImGui", nullptr);
+    ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
+    ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x, (int) who_called->_arena_mouse_pos.y);
+    ImGui::SeparatorText("OpenCV Build Information");
+    ImGui::Text("%s", cv::getBuildInformation().c_str());
+
     ImGui::End();
 }
 
@@ -743,6 +751,8 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
+
+
 
 int main(int argc, char *argv[]) {
     CZoomyClient c = CZoomyClient(cv::Size(1280, 720));
