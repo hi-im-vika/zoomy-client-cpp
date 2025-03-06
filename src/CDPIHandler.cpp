@@ -15,6 +15,8 @@ float CDPIHandler::get_scale() {
     float dpi = default_dpi;
 
     SDL_GetDisplayDPI(display_index, nullptr, &dpi, nullptr);
+    spdlog::info("screens: {:d}", SDL_GetNumVideoDisplays());
+    spdlog::info("dpi: {:.2f}",dpi);
     if ((dpi / default_dpi) < 1) {
         return 1;
     }

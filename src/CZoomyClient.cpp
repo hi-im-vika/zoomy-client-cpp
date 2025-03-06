@@ -87,6 +87,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     // scale fonts for DPI
     const float font_scaling_factor = CDPIHandler::get_scale();
+    spdlog::info(font_scaling_factor);
     const float font_size = 16.0F * font_scaling_factor;
     const std::string font_path = "../res/font/inter.ttf";
 
