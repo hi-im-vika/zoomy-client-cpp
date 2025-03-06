@@ -104,6 +104,7 @@ private:
     long _tcp_rx_bytes;
     bool _tcp_send_data;
 
+    // draw specific UI elements
     static void imgui_draw_settings(CZoomyClient *who_called);
     static void imgui_draw_waypoints(CZoomyClient *who_called);
 
