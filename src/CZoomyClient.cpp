@@ -229,14 +229,14 @@ void CZoomyClient::update() {
             _dashcam_gst_string = "videotestsrc ! appsink";
 //            _dashcam_gst_string = "udpsrc port=5200 ! watchdog timeout=1000 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink";
             // attempt to connect to udp source, timeout at 1 second
-            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+            _video_capture = cv::VideoCapture(_dashcam_gst_string, cv::CAP_GSTREAMER);
         }
 
         // if source still not opened (timeout reached), default source to videotestsrc
         if (!_video_capture.isOpened()) {
             spdlog::warn("Could not open gstreamer pipeline. Defaulting to videotestsrc");
             _dashcam_gst_string = "videotestsrc ! appsink";
-            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+            _video_capture = cv::VideoCapture(_dashcam_gst_string, cv::CAP_GSTREAMER);
         }
 
         _video_capture.read(_dashcam_raw_img);
@@ -445,7 +445,8 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
             ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0, 180);
+            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0,
+                             180);
             ImGui::PopItemWidth();
         } else {
             ImGui::TableNextRow();
@@ -453,7 +454,8 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
             ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0, 255);
+            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0,
+                             255);
             ImGui::PopItemWidth();
         }
     }
@@ -465,7 +467,8 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
 
 void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
     ImGui::Begin("Waypoints");
-    if (ImGui::BeginTable("##waypoints", 4, (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
+    if (ImGui::BeginTable("##waypoints", 4,
+                          (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
         ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
@@ -500,7 +503,8 @@ void CZoomyClient::imgui_draw_dashcam(CZoomyClient *who_called) {
     // dashcam image
     ImGui::Begin("Dashcam", nullptr, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
-        ImGui::MenuItem(who_called->_use_dashcam ? who_called->_dashcam_gst_string.c_str() : "none",nullptr,false,false);
+        ImGui::MenuItem(who_called->_use_dashcam ? who_called->_dashcam_gst_string.c_str() : "none", nullptr, false,
+                        false);
         ImGui::EndMenuBar();
     }
 
@@ -558,9 +562,12 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
     if (ImGui::IsItemHovered()) {
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
                                         (ImGui::GetMousePos().y - last_cursor_pos.y) * how_much_to_scale_coordinates);
-        who_called->_arena_mouse_pos.x = arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
-        who_called->_arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x,ImGui::GetMousePos().y),15,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+        who_called->_arena_mouse_pos.x =
+                arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
+        who_called->_arena_mouse_pos.y =
+                arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
+                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
     }
 
     // plot waypoints in ImGui instead of OpenCV
@@ -570,17 +577,20 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
         ImVec2 pt_ctr = ImVec2((i.coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
                                (i.coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
         // plot the waypoint
-        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr,10,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
         if (wp) {   // if not the first waypoints
             auto last = std::prev(&i);  // get last waypoint
             // modify waypoint coords to fit on image
             ImVec2 last_pt_ctr = ImVec2((last->coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
-                                   (last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+                                        (last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
             // draw line from prev waypoint to current waypoint
-            ImGui::GetWindowDrawList()->AddLine(last_pt_ctr,pt_ctr,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+            ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
         }
         // draw waypoint index on top of waypoint
-        ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),ImVec2(pt_ctr.x-(ImGui::GetFontSize()/4),pt_ctr.y-(ImGui::GetFontSize()/2)),IM_COL32_BLACK,std::to_string(wp++).c_str());
+        ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                                            ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
+                                                   pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
+                                            std::to_string(wp++).c_str());
     }
 
     ImGui::End();
@@ -590,7 +600,8 @@ void CZoomyClient::imgui_draw_debug(CZoomyClient *who_called) {
     // imgui window (for debug)
     ImGui::Begin("ImGui", nullptr);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
-    ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x, (int) who_called->_arena_mouse_pos.y);
+    ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x,
+                (int) who_called->_arena_mouse_pos.y);
     ImGui::Text("Viewport %d %d", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
     ImGui::SeparatorText("OpenCV Build Information");
     ImGui::Text("%s", cv::getBuildInformation().c_str());
@@ -759,7 +770,8 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 // only call this from inside imgui window
-void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale, ImVec2 *last_cursor_screen_pos) {
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale,
+                                         ImVec2 *last_cursor_screen_pos) {
 // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
     float ratio = ((float) input_image.cols) / ((float) input_image.rows);
