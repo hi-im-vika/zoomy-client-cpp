@@ -7,6 +7,7 @@
 #pragma once
 
 #include <string>
+
 #include <spdlog/spdlog.h>
 #include <SDL.h>
 

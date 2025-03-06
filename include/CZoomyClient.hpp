@@ -7,13 +7,16 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <cmath>
+
+#include <nlohmann/json.hpp>
 #include <imgui.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <spdlog/spdlog.h>
 #include <SDL.h>
-#include <sstream>
-#include <math.h>
+
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL_opengles2.h>
 #else
