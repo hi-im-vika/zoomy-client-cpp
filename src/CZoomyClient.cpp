@@ -777,7 +777,29 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
 
+// only call this from inside imgui window
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture) {
+// from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+    float ratio = ((float) input_image.cols) / ((float) input_image.rows);
+    float viewport_ratio = viewport_size.x / viewport_size.y;
+    mat_to_tex(input_image, output_texture);
 
+    // Scale the image horizontally if the content region is wider than the image
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(imageWidth, viewport_size.y));
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(viewport_size.x, imageHeight));
+    }
+}
 
 int main(int argc, char *argv[]) {
     CZoomyClient c = CZoomyClient(cv::Size(1280, 720));

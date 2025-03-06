@@ -105,11 +105,13 @@ private:
     bool _tcp_send_data;
 
     // draw specific UI elements
-    static void imgui_draw_settings(CZoomyClient *who_called);
-    static void imgui_draw_waypoints(CZoomyClient *who_called);
-    static void imgui_draw_dashcam(CZoomyClient *who_called);
-    static void imgui_draw_arena(CZoomyClient *who_called);
-    static void imgui_draw_debug(CZoomyClient *who_called);
+    void imgui_draw_settings(CZoomyClient *who_called);
+    void imgui_draw_waypoints(CZoomyClient *who_called);
+    void imgui_draw_dashcam(CZoomyClient *who_called);
+    void imgui_draw_arena(CZoomyClient *who_called);
+    void imgui_draw_debug(CZoomyClient *who_called);
+
+    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture);
 
     static void mat_to_tex(cv::Mat &input, GLuint &output);
 
