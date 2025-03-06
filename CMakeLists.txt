@@ -33,4 +33,10 @@ add_executable(zoomy-client
         src/CAutoController.cpp
         include/CAutoController.hpp
 )
-target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-net)
+
+if (WIN32)
+    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-net ws2_32 -lmingw32 -mwindows)
+    add_definitions(-DSDL_MAIN_HANDLED)
+else ()
+    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-net)
+endif ()
