@@ -5,6 +5,9 @@
  */
 
 #include "../include/CZoomyClient.hpp"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
@@ -67,6 +70,10 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
+#ifdef WIN32
+    SetProcessDPIAware();
 #endif
 
     _window = std::make_unique<CWindow>(WINDOW_NAME, _window_size.width, _window_size.height);
