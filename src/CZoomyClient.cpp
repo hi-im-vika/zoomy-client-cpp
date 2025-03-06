@@ -614,7 +614,6 @@ void CZoomyClient::imgui_draw_debug(CZoomyClient *who_called) {
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x,
                 (int) who_called->_arena_mouse_pos.y);
-    ImGui::Text("Viewport %d %d", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
     ImGui::SeparatorText("OpenCV Build Information");
     ImGui::Text("%s", cv::getBuildInformation().c_str());
     ImGui::ShowDemoWindow();
