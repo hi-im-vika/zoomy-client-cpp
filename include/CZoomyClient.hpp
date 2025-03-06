@@ -111,7 +111,7 @@ private:
     void imgui_draw_arena(CZoomyClient *who_called);
     void imgui_draw_debug(CZoomyClient *who_called);
 
-    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture);
+    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale = nullptr, ImVec2 *last_cursor_screen_pos = nullptr);
 
     static void mat_to_tex(cv::Mat &input, GLuint &output);
 
