@@ -534,6 +534,7 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
     // arena image
     ImGui::Begin("Arena", nullptr);
 
+
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
     float ratio = ((float) who_called->_arena_img.cols) / ((float) who_called->_arena_img.rows);
