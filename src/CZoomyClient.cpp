@@ -134,6 +134,18 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
 
+    // check if json exists, load if so, create if not
+    _json_file.open("waypoints.json");
+    if (!_json_file.good()) {
+        spdlog::warn("waypoints.json not found, making a new one");
+        _json_file.close();
+        _json_file.open("waypoints.json",std::fstream::out);
+    } else {
+        spdlog::info("waypoints.json found, attempting load");
+        _json_file.close();
+        _json_file.open("waypoints.json",std::fstream::in | std::fstream::out | std::fstream::trunc);
+    }
+
     // smaller rot value = ccw, larger rot value = cw
     _waypoints = {
             CAutoController::waypoint{     // WAYPOINT 0

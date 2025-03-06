@@ -7,6 +7,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <cmath>
 
@@ -59,6 +60,8 @@ private:
     ImVec2 _arena_mouse_pos;
 
     // control
+    std::ifstream _json_file;
+    nlohmann::json _json_data;
     CAutoController _autonomous;
     unsigned int _step;
     std::vector<int> _values;
