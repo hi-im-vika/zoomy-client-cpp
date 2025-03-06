@@ -496,37 +496,17 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
 }
 
 void CZoomyClient::imgui_draw_dashcam(CZoomyClient *who_called) {
-// dashcam image
+    // dashcam image
     ImGui::Begin("Dashcam", nullptr, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
         ImGui::MenuItem(who_called->_use_dashcam ? who_called->_dashcam_gst_string.c_str() : "none",nullptr,false,false);
         ImGui::EndMenuBar();
     }
 
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) who_called->_dashcam_img.cols) / ((float) who_called->_dashcam_img.rows);
-    float viewport_ratio = viewport_size.x / viewport_size.y;
-
     who_called->_lockout_dashcam.lock();
-    mat_to_tex(who_called->_dashcam_img, who_called->_dashcam_tex);
-
-    // Scale the image horizontally if the content region is wider than the image
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        ImGui::Image((ImTextureID) (intptr_t) who_called->_dashcam_tex, ImVec2(imageWidth, viewport_size.y));
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        ImGui::Image((ImTextureID) (intptr_t) who_called->_dashcam_tex, ImVec2(viewport_size.x, imageHeight));
-    }
-
+    fit_texture_to_window(_dashcam_img, _dashcam_tex);
     who_called->_lockout_dashcam.unlock();
+
     ImGui::End();
 }
 
