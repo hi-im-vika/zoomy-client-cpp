@@ -343,8 +343,10 @@ void CZoomyClient::draw() {
         }
     }
 
-    ImGuiIO &io = ImGui::GetIO();
+    // if viewport is minimized, don't draw
+    if (SDL_GetWindowFlags(_window->get_native_window()) & SDL_WINDOW_MINIMIZED) return;
 
+    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
