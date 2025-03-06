@@ -581,17 +581,24 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
         who_called->_arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
         ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x,ImGui::GetMousePos().y),15,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
     }
-    int wp = 0;
+
+    // plot waypoints in ImGui instead of OpenCV
+    int wp = 0; // keep track of which waypoint plotted
     for (auto &i: who_called->_waypoints) {
+        // modify waypoint coords to fit on image
         ImVec2 pt_ctr = ImVec2((i.coordinates.x / how_much_to_scale_coordinates) + pos_x,
                                (i.coordinates.y / how_much_to_scale_coordinates) + pos_y);
+        // plot the waypoint
         ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr,10,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
-        if (wp) {
-            auto last = std::prev(&i);
+        if (wp) {   // if not the first waypoints
+            auto last = std::prev(&i);  // get last waypoint
+            // modify waypoint coords to fit on image
             ImVec2 last_pt_ctr = ImVec2((last->coordinates.x / how_much_to_scale_coordinates) + pos_x,
                                    (last->coordinates.y / how_much_to_scale_coordinates) + pos_y);
+            // draw line from prev waypoint to current waypoint
             ImGui::GetWindowDrawList()->AddLine(last_pt_ctr,pt_ctr,ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
         }
+        // draw waypoint index on top of waypoint
         ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),ImVec2(pt_ctr.x-(ImGui::GetFontSize()/4),pt_ctr.y-(ImGui::GetFontSize()/2)),IM_COL32_BLACK,std::to_string(wp++).c_str());
     }
 
