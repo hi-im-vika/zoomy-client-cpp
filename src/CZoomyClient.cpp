@@ -355,37 +355,8 @@ void CZoomyClient::draw() {
     ImGui::DockSpaceOverViewport();
 
     imgui_draw_settings(this);
+    imgui_draw_waypoints(this);
 
-    ImGui::Begin("Waypoints");
-    if (ImGui::BeginTable("##waypoints", 4, (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
-        ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableHeadersRow();
-        for (auto &i: _waypoints) {
-            ImGui::TableNextRow();
-            // X
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%d", i.coordinates.x);
-
-            // Y
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", i.coordinates.y);
-
-            // Speed
-            ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%d", i.speed);
-
-            // Rotation
-            ImGui::TableSetColumnIndex(3);
-            ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::Text("%d", i.rotation);
-            ImGui::PopItemWidth();
-        }
-        ImGui::EndTable();
-    }
-    ImGui::End();
 
     // dashcam image
     ImGui::Begin("Dashcam", p_open, ImGuiWindowFlags_MenuBar);
@@ -510,7 +481,7 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "127.0.0.1";
     static char tcp_port[64] = "4006";
-    ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::BeginDisabled(who_called->_udp_req_ready);
     ImGui::Text("UDP Host:");
     ImGui::SameLine();
     ImGui::InputText("###udp_host_input", udp_host, 64);
@@ -518,13 +489,13 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     ImGui::SameLine();
     ImGui::InputText("###udp_port_input", udp_port, 64);
     if (ImGui::Button("Connect to UDP")) {
-        _udp_host = udp_host;
-        _udp_port = udp_port;
-        _udp_req_ready = true;
+        who_called->_udp_host = udp_host;
+        who_called->_udp_port = udp_port;
+        who_called->_udp_req_ready = true;
     }
     ImGui::EndDisabled();
 
-    ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::BeginDisabled(who_called->_tcp_req_ready);
     ImGui::Text("TCP Host:");
     ImGui::SameLine();
     ImGui::InputText("###tcp_host_input", tcp_host, 64);
@@ -532,52 +503,85 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     ImGui::SameLine();
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
     if (ImGui::Button("Connect to TCP")) {
-        _tcp_host = tcp_host;
-        _tcp_port = tcp_port;
-        _tcp_req_ready = true;
+        who_called->_tcp_host = tcp_host;
+        who_called->_tcp_port = tcp_port;
+        who_called->_tcp_req_ready = true;
     }
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
-    ImGui::Checkbox("Use dashcam", &_use_dashcam);
-    ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
+    ImGui::Checkbox("Use dashcam", &(who_called->_use_dashcam));
+    ImGui::Checkbox("Rotate dashcam 180", &(who_called->_flip_image));
     ImGui::EndGroup();
 
     std::stringstream ss;
-    for (auto &i: _values) {
+    for (auto &i: who_called->_values) {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
 
     // opencv parameters
     ImGui::SeparatorText("OpenCV");
-    ImGui::Text("Markers: %ld", _marker_ids.size());
+    ImGui::Text("Markers: %ld", who_called->_marker_ids.size());
     ImGui::BeginGroup();
     ImGui::BeginTable("##cal_item_table", 2, ImGuiTableFlags_SizingFixedFit);
     ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
-    for (int i = 0; i < _hsv_slider_names.size(); i++) {
+    for (int i = 0; i < who_called->_hsv_slider_names.size(); i++) {
         if (i < 2) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 180);
+            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0, 180);
             ImGui::PopItemWidth();
         } else {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
+            ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0, 255);
+            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0, 255);
             ImGui::PopItemWidth();
         }
     }
     ImGui::EndTable();
     ImGui::EndGroup();
 
+    ImGui::End();
+}
+
+void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
+    ImGui::Begin("Waypoints");
+    if (ImGui::BeginTable("##waypoints", 4, (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
+        ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+        for (auto &i: who_called->_waypoints) {
+            ImGui::TableNextRow();
+            // X
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%d", i.coordinates.x);
+
+            // Y
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%d", i.coordinates.y);
+
+            // Speed
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%d", i.speed);
+
+            // Rotation
+            ImGui::TableSetColumnIndex(3);
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::Text("%d", i.rotation);
+            ImGui::PopItemWidth();
+        }
+        ImGui::EndTable();
+    }
     ImGui::End();
 }
 
