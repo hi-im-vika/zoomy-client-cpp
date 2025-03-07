@@ -54,6 +54,7 @@ private:
     SDL_Event _evt;
     std::mutex _lockout_dashcam, _lockout_arena;
     ImVec2 _arena_mouse_pos;
+    int _wp_highlighted;
 
     // control
     CAutoController _autonomous;
@@ -104,7 +105,15 @@ private:
     long _tcp_rx_bytes;
     bool _tcp_send_data;
 
-    void mat_to_tex(cv::Mat &input, GLuint &output);
+    // draw specific UI elements
+    void imgui_draw_settings();
+    void imgui_draw_waypoints();
+    void imgui_draw_dashcam();
+    void imgui_draw_arena();
+    void imgui_draw_debug();
+
+    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale = nullptr, ImVec2 *last_cursor_screen_pos = nullptr);
+    static void mat_to_tex(cv::Mat &input, GLuint &output);
 
     void udp_rx();
     void udp_tx();
