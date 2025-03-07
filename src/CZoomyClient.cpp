@@ -483,6 +483,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::EndGroup();
 
     ImGui::End();
+}
 
 void CZoomyClient::imgui_draw_waypoints() {
     ImGui::Begin("Waypoints");
