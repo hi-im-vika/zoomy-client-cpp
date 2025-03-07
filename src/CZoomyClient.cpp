@@ -32,22 +32,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
         exit(-1);
     }
 
-    std::stringstream ss;
-
-    // control init
-
-    int joysticks = SDL_NumJoysticks();
-    if (!joysticks) {
-        spdlog::warn("No controllers detected.");
-    } else {
-        for (int i = 0; i < joysticks; i++) {
-            if (SDL_IsGameController(i)) {
-                _gc = SDL_GameControllerOpen(i);
-                ss << "Game controller " << i << " opened.";
-                spdlog::info(ss.str());
-            }
-        }
-    }
+//    // control init
 
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -102,12 +87,10 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     CDPIHandler::set_global_font_scaling(&io);
 
     // rendering init
-
     ImGui_ImplSDL2_InitForOpenGL(_window->get_native_window(), _window->get_native_context());
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // OpenCV init
-
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
@@ -290,14 +273,14 @@ void CZoomyClient::update() {
         if (!_video_capture.isOpened()) {
             _dashcam_gst_string = "udpsrc port=5200 ! watchdog timeout=1000 ! application/x-rtp, media=video, clock-rate=90000, payload=96 ! rtpjpegdepay ! jpegdec ! videoconvert ! appsink";
             // attempt to connect to udp source, timeout at 1 second
-            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+            _video_capture = cv::VideoCapture(_dashcam_gst_string, cv::CAP_GSTREAMER);
         }
 
         // if source still not opened (timeout reached), default source to videotestsrc
         if (!_video_capture.isOpened()) {
             spdlog::warn("Could not open gstreamer pipeline. Defaulting to videotestsrc");
             _dashcam_gst_string = "videotestsrc ! appsink";
-            _video_capture = cv::VideoCapture(_dashcam_gst_string,cv::CAP_GSTREAMER);
+            _video_capture = cv::VideoCapture(_dashcam_gst_string, cv::CAP_GSTREAMER);
         }
 
         _video_capture.read(_dashcam_raw_img);
@@ -365,6 +348,12 @@ void CZoomyClient::draw() {
                 spdlog::info("Quit");
                 _do_exit = true;
                 break;
+            case SDL_CONTROLLERDEVICEADDED:
+                spdlog::info("GC added");
+                break;
+            case SDL_CONTROLLERDEVICEREMOVED:
+                spdlog::info("GC removed");
+                break;
             case SDL_CONTROLLERBUTTONDOWN:
             case SDL_CONTROLLERBUTTONUP:
                 //_values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
@@ -427,56 +416,170 @@ void CZoomyClient::draw() {
         }
     }
 
-    bool *p_open = nullptr;
-    ImGuiIO &io = ImGui::GetIO();
+    // if viewport is minimized, don't draw
+    if (SDL_GetWindowFlags(_window->get_native_window()) & SDL_WINDOW_MINIMIZED) return;
 
+    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
     ImGui::DockSpaceOverViewport();
 
+    imgui_draw_settings();
+    imgui_draw_waypoints();
+    imgui_draw_dashcam();
+    imgui_draw_arena();
+    imgui_draw_debug();
+
+    ImGui::Render();
+
+    // render ImGui with OpenGL
+    glViewport(0, 0, static_cast<int>(io.DisplaySize.x), static_cast<int>(io.DisplaySize.y));
+    glClearColor(0.5F, 0.5F, 0.5F, 1.00F);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+//    // update other viewports if multi-viewport enabled
+//    if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
+//        SDL_Window *backup_current_window{SDL_GL_GetCurrentWindow()};
+//        SDL_GLContext backup_current_context{SDL_GL_GetCurrentContext()};
+//        ImGui::UpdatePlatformWindows();
+//        ImGui::RenderPlatformWindowsDefault();
+//        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+//    }
+
+    SDL_GL_SwapWindow(_window->get_native_window());
+
+    // limit to 1000 FPS
+    while ((int) std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
+}
+
+void CZoomyClient::imgui_draw_settings() {
     // networking settings
-    ImGui::Begin("Settings", p_open);
+    ImGui::Begin("Settings", nullptr);
+    ImGui::SeparatorText("Controls");
+    ImGui::Text("Choose gamepad:");
+    int joysticks = SDL_NumJoysticks();
+    std::vector<std::string> joystick_names;
+
+    // if joysticks are connected
+    if (joysticks) {
+        // get all joystick names
+        for (int i = 0; i < joysticks; i++) {
+            joystick_names.emplace_back(SDL_GameControllerNameForIndex(i));
+        }
+        // if no gc assigned already, assign first one
+        if (!_gc) _gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(0));
+    } else {
+        // if nothing connected, set gc to nullptr
+        _gc = nullptr;
+    }
+
+    int item_selected_idx = 0;
+    std::string combo_preview_value = joysticks ? SDL_GameControllerName(_gc) : "No gamepads connected";
+
+    ImGui::BeginDisabled(!joysticks);
+    ImGui::PushItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##gpselect", combo_preview_value.c_str())) {
+        for (int i = 0; i < joysticks; i++) {
+            const bool is_selected = (item_selected_idx == i);
+            if (ImGui::Selectable(SDL_GameControllerNameForIndex(i), is_selected)) {
+                item_selected_idx = i;
+                _gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(i));
+            }
+            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+            if (is_selected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+    ImGui::EndDisabled();
+
     ImGui::SeparatorText("Networking");
+
+    // placeholder values
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "192.168.1.156";
     static char tcp_port[64] = "4006";
+
+    ImGui::BeginGroup();
+
+    // draw udp conn details table
     ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::BeginTable("##udp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##udp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##udp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
         _udp_host = udp_host;
         _udp_port = udp_port;
         _udp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
+    // draw udp conn details table
     ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to TCP")) {
         _tcp_host = tcp_host;
         _tcp_port = tcp_port;
         _tcp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
+    ImGui::EndGroup();
 
+    // draw checkboxes for toggleable values
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::Checkbox("Demo mode", &_demo);
     ImGui::EndGroup();
 
+    // TODO: determine maximum number of values to send and remove stringstream
     std::stringstream ss;
     for (auto &i: _values) {
         ss << i << " ";
@@ -513,20 +616,37 @@ void CZoomyClient::draw() {
     ImGui::EndGroup();
 
     ImGui::End();
+}
 
+void CZoomyClient::imgui_draw_waypoints() {
     ImGui::Begin("Waypoints");
-    if (ImGui::BeginTable("##waypoints", 4, (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
+    if (ImGui::BeginTable("##waypoints", 4,
+                          (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
         ImGui::TableSetupColumn("X##waypoints_x", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Y##waypoints_y", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
+        int wp_id = 0;  // keep track of current waypoint
+        char label[32];
+        bool was_hovered = false;   // remember if row inside table was hovered
         for (auto &i: _waypoints) {
+            snprintf(label, 32, "##waypoint_%d", wp_id);
+            ImGui::PushID(label);
             ImGui::TableNextRow();
             // X
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%d", i.coordinates.x);
+            snprintf(label, 32, "%d", i.coordinates.x);
+            bool a = false;
 
+            ImGuiSelectableFlags selectable_flags =
+                    ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+            ImGui::Selectable(label, a, selectable_flags);
+
+            if (ImGui::IsItemHovered()) {
+                _wp_highlighted = wp_id;
+                was_hovered = true;
+            }
             // Y
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%d", i.coordinates.y);
@@ -540,51 +660,45 @@ void CZoomyClient::draw() {
             ImGui::PushItemWidth(-FLT_MIN);
             ImGui::Text("%d", i.rotation);
             ImGui::PopItemWidth();
+
+            ImGui::PopID();
+            wp_id++;
         }
+        if (!was_hovered) _wp_highlighted = -1; // if nothing was hovered, set highlight to false
         ImGui::EndTable();
     }
     ImGui::End();
+}
 
+void CZoomyClient::imgui_draw_dashcam() {
     // dashcam image
-    ImGui::Begin("Dashcam", p_open, ImGuiWindowFlags_MenuBar);
+    ImGui::Begin("Dashcam", nullptr, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
-        ImGui::MenuItem(_use_dashcam ? _dashcam_gst_string.c_str() : "none",nullptr,false,false);
+        ImGui::MenuItem(_use_dashcam ? _dashcam_gst_string.c_str() : "none", nullptr, false,
+                        false);
         ImGui::EndMenuBar();
     }
 
+    _lockout_dashcam.lock();
+    fit_texture_to_window(_dashcam_img, _dashcam_tex);
+    _lockout_dashcam.unlock();
+
+    ImGui::End();
+}
+
+void CZoomyClient::imgui_draw_arena() {
+    // arena image
+    ImGui::Begin("Arena", nullptr);
+
+//    float scaled_factor = 0.0f;
+    ImVec2 last_cursor_pos;
+//    fit_texture_to_window(who_called->_arena_raw_img, who_called->_arena_tex, &scaled_factor, &last_cur_pos);
+//    float how_much_to_scale_coordinates = ARENA_DIM / scaled_factor;
+
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) _dashcam_img.cols) / ((float) _dashcam_img.rows);
+    float ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     float viewport_ratio = viewport_size.x / viewport_size.y;
-
-    _lockout_dashcam.lock();
-    mat_to_tex(_dashcam_img, _dashcam_tex);
-
-    // Scale the image horizontally if the content region is wider than the image
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(imageWidth, viewport_size.y));
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        ImGui::Image((ImTextureID) (intptr_t) _dashcam_tex, ImVec2(viewport_size.x, imageHeight));
-    }
-
-    _lockout_dashcam.unlock();
-    ImGui::End();
-
-    // arena image
-    ImGui::Begin("Arena", p_open);
-
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    viewport_size = ImGui::GetContentRegionAvail();
-    ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
-    viewport_ratio = viewport_size.x / viewport_size.y;
 
 //    if (_autonomous.isRunning()) {
 //        cv::Mat temp_img = _autonomous.get_masked_image();
@@ -594,16 +708,13 @@ void CZoomyClient::draw() {
 //    }
 
     // Scale the image horizontally if the content region is wider than the image
-    float pos_x = 0.0f;
-    float pos_y = 0.0f;
     float scaled_size = 0.0f;
     float how_much_to_scale_coordinates = 0.0f;
     if (viewport_ratio > ratio) {
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        pos_x = ImGui::GetCursorScreenPos().x;
-        pos_y = ImGui::GetCursorScreenPos().y;
+        last_cursor_pos = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
         scaled_size = imageWidth;
         how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
@@ -613,51 +724,73 @@ void CZoomyClient::draw() {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        pos_x = ImGui::GetCursorScreenPos().x;
-        pos_y = ImGui::GetCursorScreenPos().y;
+        last_cursor_pos = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
         scaled_size = imageHeight;
         how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
     }
 
     if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - pos_x) * how_much_to_scale_coordinates,
-                                        (ImGui::GetMousePos().y - pos_y) * how_much_to_scale_coordinates);
-        _arena_mouse_pos.x = arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
-        _arena_mouse_pos.y = arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
+                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * how_much_to_scale_coordinates);
+        _arena_mouse_pos.x =
+                arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
+        _arena_mouse_pos.y =
+                arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
+                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+    }
+
+    // plot waypoints in ImGui instead of OpenCV
+    int wp = 0; // keep track of which waypoint plotted
+    ImGui::GetWindowDrawList()->ChannelsSplit(2);
+    for (auto &i: _waypoints) {
+        ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
+
+        // modify waypoint coords to fit on image
+        ImVec2 pt_ctr = ImVec2((i.coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
+                               (i.coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+
+        // plot the waypoint
+        ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
+                ImVec4(1.0f, 1.0f, 0.4f, 1.0f));
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, wp_colour);
+
+        // draw waypoint index on top of waypoint
+        ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                                            ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
+                                                   pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
+                                            std::to_string(wp).c_str());
+
+        // draw connecting line
+        ImGui::GetWindowDrawList()->ChannelsSetCurrent(0);
+        if (wp) {   // if not the first waypoints
+            auto last = std::prev(&i);  // get last waypoint
+            // modify waypoint coords to fit on image
+            ImVec2 last_pt_ctr = ImVec2((last->coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
+                                        (last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+            // draw line from prev waypoint to current waypoint
+//            maybe add arrow to line
+//            ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
+            ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
+        }
+        wp++;
     }
 
     ImGui::End();
+}
 
+void CZoomyClient::imgui_draw_debug() {
     // imgui window (for debug)
-    ImGui::Begin("ImGui", p_open);
+    ImGui::Begin("ImGui", nullptr);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
     ImGui::SeparatorText("OpenCV Build Information");
     ImGui::Text("%s", cv::getBuildInformation().c_str());
+    ImGui::ShowDemoWindow();
 
     ImGui::End();
-
-    ImGui::Render();
-
-    glViewport(0, 0, static_cast<int>(io.DisplaySize.x), static_cast<int>(io.DisplaySize.y));
-    glClearColor(0.5F, 0.5F, 0.5F, 1.00F);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
-        SDL_Window *backup_current_window{SDL_GL_GetCurrentWindow()};
-        SDL_GLContext backup_current_context{SDL_GL_GetCurrentContext()};
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-    }
-
-    SDL_GL_SwapWindow(_window->get_native_window());
-
-    // limit to 1000 FPS
-    while ((int) std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
 }
 
 void CZoomyClient::udp_rx() {
@@ -817,6 +950,35 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
+}
+
+// only call this from inside imgui window
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale,
+                                         ImVec2 *last_cursor_screen_pos) {
+// from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
+    float ratio = ((float) input_image.cols) / ((float) input_image.rows);
+    float viewport_ratio = viewport_size.x / viewport_size.y;
+    mat_to_tex(input_image, output_texture);
+
+    // Scale the image horizontally if the content region is wider than the image
+    if (viewport_ratio > ratio) {
+        float imageWidth = viewport_size.y * ratio;
+        float xPadding = (viewport_size.x - imageWidth) / 2;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(imageWidth, viewport_size.y));
+        if (scale) *scale = imageWidth;
+    }
+        // Scale the image vertically if the content region is taller than the image
+    else {
+        float imageHeight = viewport_size.x / ratio;
+        float yPadding = (viewport_size.y - imageHeight) / 2;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(viewport_size.x, imageHeight));
+        if (scale) *scale = imageHeight;
+    }
+
+    if (last_cursor_screen_pos) *last_cursor_screen_pos = ImGui::GetCursorScreenPos();
 }
 
 int main(int argc, char *argv[]) {
