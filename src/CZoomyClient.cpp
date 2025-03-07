@@ -26,8 +26,6 @@ CZoomyClient::CZoomyClient(cv::Size s) {
         exit(-1);
     }
 
-    std::stringstream ss;
-
 //    // control init
 
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -498,6 +496,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::EndGroup();
 
+    // TODO: determine maximum number of values to send and remove stringstream
     std::stringstream ss;
     for (auto &i: _values) {
         ss << i << " ";
@@ -545,13 +544,12 @@ void CZoomyClient::imgui_draw_waypoints() {
         ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
-        int wp_id = 0;
+        int wp_id = 0;  // keep track of current waypoint
         char label[32];
         bool was_hovered = false;   // remember if row inside table was hovered
         for (auto &i: _waypoints) {
-            std::stringstream ss;
-            ss << "##waypoint_" << wp_id;
-            ImGui::PushID(ss.str().c_str());
+            snprintf(label, 32, "##waypoint_%d", wp_id);
+            ImGui::PushID(label);
             ImGui::TableNextRow();
             // X
             ImGui::TableSetColumnIndex(0);
