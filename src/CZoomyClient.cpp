@@ -384,20 +384,24 @@ void CZoomyClient::imgui_draw_settings() {
     int joysticks = SDL_NumJoysticks();
     std::vector<std::string> joystick_names;
 
+    // if joysticks are connected
     if (joysticks) {
+        // get all joystick names
         for (int i = 0; i < joysticks; i++) {
             joystick_names.emplace_back(SDL_GameControllerNameForIndex(i));
         }
+        // if no gc assigned already, assign first one
         if (!_gc) _gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(0));
     } else {
+        // if nothing connected, set gc to nullptr
         _gc = nullptr;
     }
 
     int item_selected_idx = 0;
-    std::string combo_preview_value = joysticks ? joystick_names.at(item_selected_idx) : "No gamepads connected";
+    std::string combo_preview_value = joysticks ? SDL_GameControllerName(_gc) : "No gamepads connected";
 
-    if (!joysticks) ImGui::BeginDisabled();
-
+    ImGui::BeginDisabled(!joysticks);
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::BeginCombo("##gpselect", combo_preview_value.c_str())) {
         for (int i = 0; i < joysticks; i++) {
             const bool is_selected = (item_selected_idx == i);
@@ -410,7 +414,8 @@ void CZoomyClient::imgui_draw_settings() {
         }
         ImGui::EndCombo();
     }
-    if (!joysticks) ImGui::EndDisabled();
+    ImGui::PopItemWidth();
+    ImGui::EndDisabled();
 
     ImGui::SeparatorText("Networking");
     static char udp_host[64] = "192.168.1.104";
