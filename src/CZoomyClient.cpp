@@ -418,38 +418,81 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::EndDisabled();
 
     ImGui::SeparatorText("Networking");
+
+    // placeholder values
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "127.0.0.1";
     static char tcp_port[64] = "4006";
+
+    ImGui::BeginGroup();
+
+    // draw udp conn details table
     ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::BeginTable("##udp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##udp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##udp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
         _udp_host = udp_host;
         _udp_port = udp_port;
         _udp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
+    // draw udp conn details table
     ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to TCP")) {
         _tcp_host = tcp_host;
         _tcp_port = tcp_port;
         _tcp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
+    ImGui::EndGroup();
 
+    // draw checkboxes for toggleable values
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
