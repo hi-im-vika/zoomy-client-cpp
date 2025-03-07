@@ -135,81 +135,40 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
 
     // check if json exists, load if so, create if not
-    _json_file.open("waypoints.json");
-    if (!_json_file.good()) {
-        spdlog::warn("waypoints.json not found, making a new one");
-        _json_file.close();
-        _json_file.open("waypoints.json",std::fstream::out);
-    } else {
-        spdlog::info("waypoints.json found, attempting load");
-        _json_file.close();
-        _json_file.open("waypoints.json",std::fstream::in | std::fstream::out | std::fstream::trunc);
+    std::ifstream i("waypoints.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"waypoints", {
+                {{"coords", {0,0}},     {"speed", 0},       {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {96,369}},  {"speed", 14000},   {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {245,450}}, {"speed", 14000},   {"rotation", 342},  {"enable_turret", false}},
+                {{"coords", {136,262}}, {"speed", 15000},   {"rotation", 90},   {"enable_turret", false}},
+                {{"coords", {137,130}}, {"speed", 14000},   {"rotation", 70},   {"enable_turret", false}},
+                {{"coords", {327,115}}, {"speed", 14000},   {"rotation", 210},  {"enable_turret", false}},
+                {{"coords", {511,147}}, {"speed", 14000},   {"rotation", 180},  {"enable_turret", false}},
+                {{"coords", {458,334}}, {"speed", 15000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {578,421}}, {"speed", 14000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {572,535}}, {"speed", 20000},   {"rotation", 270},  {"enable_turret", false}},
+        }}};
+
+        std::ofstream o("waypoints.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("waypoints.json");
     }
 
-    // smaller rot value = ccw, larger rot value = cw
-    _waypoints = {
-            CAutoController::waypoint{     // WAYPOINT 0
-                    cv::Point(0, 0),
-                    0,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 1
-                    cv::Point(96, 369),
-                    14000,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
-                    cv::Point(245, 450),
-                    14000,
-                    342,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 3
-                    cv::Point(136, 262),
-                    15000,
-                    90,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 4
-                    cv::Point(137, 130),
-                    14000,
-                    70,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 5
-                    cv::Point(327, 115),
-                    14000,
-                    210,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 6
-                    cv::Point(511, 147),
-                    14000,
-                    180,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 7
-//                cv::Point(515, 350),
-                    cv::Point(458, 334),
-                    15000,
-                    270,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 8
-                    cv::Point(578, 421),
-                    14000,
-                    270,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 9
-                    cv::Point(572, 535),
-                    20000,
-                    270,
-                    false
-            },
-    };
+    i >> _json_data;
+    for (auto it : _json_data["waypoints"]) {
+        _waypoints.push_back(CAutoController::waypoint{
+            cv::Point((int) it["coords"][0], (int) it["coords"][1]),
+            (int) it["speed"],
+            (int) it["rotation"],
+            (bool) it["enable_turret"]});
+    }
+    i.close();
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
