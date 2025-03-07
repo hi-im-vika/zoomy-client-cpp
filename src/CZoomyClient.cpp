@@ -354,11 +354,11 @@ void CZoomyClient::draw() {
 
     ImGui::DockSpaceOverViewport();
 
-    imgui_draw_settings(this);
-    imgui_draw_waypoints(this);
-    imgui_draw_dashcam(this);
-    imgui_draw_arena(this);
-    imgui_draw_debug(this);
+    imgui_draw_settings();
+    imgui_draw_waypoints();
+    imgui_draw_dashcam();
+    imgui_draw_arena();
+    imgui_draw_debug();
 
     ImGui::Render();
 
@@ -384,7 +384,7 @@ void CZoomyClient::draw() {
             std::chrono::steady_clock::now() - _perf_draw_start).count() < 1);
 }
 
-void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
+void CZoomyClient::imgui_draw_settings() {
     // networking settings
     ImGui::Begin("Settings", nullptr);
     ImGui::SeparatorText("Networking");
@@ -392,7 +392,7 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "127.0.0.1";
     static char tcp_port[64] = "4006";
-    ImGui::BeginDisabled(who_called->_udp_req_ready);
+    ImGui::BeginDisabled(_udp_req_ready);
     ImGui::Text("UDP Host:");
     ImGui::SameLine();
     ImGui::InputText("###udp_host_input", udp_host, 64);
@@ -400,13 +400,13 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     ImGui::SameLine();
     ImGui::InputText("###udp_port_input", udp_port, 64);
     if (ImGui::Button("Connect to UDP")) {
-        who_called->_udp_host = udp_host;
-        who_called->_udp_port = udp_port;
-        who_called->_udp_req_ready = true;
+        _udp_host = udp_host;
+        _udp_port = udp_port;
+        _udp_req_ready = true;
     }
     ImGui::EndDisabled();
 
-    ImGui::BeginDisabled(who_called->_tcp_req_ready);
+    ImGui::BeginDisabled(_tcp_req_ready);
     ImGui::Text("TCP Host:");
     ImGui::SameLine();
     ImGui::InputText("###tcp_host_input", tcp_host, 64);
@@ -414,47 +414,47 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     ImGui::SameLine();
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
     if (ImGui::Button("Connect to TCP")) {
-        who_called->_tcp_host = tcp_host;
-        who_called->_tcp_port = tcp_port;
-        who_called->_tcp_req_ready = true;
+        _tcp_host = tcp_host;
+        _tcp_port = tcp_port;
+        _tcp_req_ready = true;
     }
     ImGui::EndDisabled();
 
     ImGui::BeginGroup();
-    ImGui::Checkbox("Use dashcam", &(who_called->_use_dashcam));
-    ImGui::Checkbox("Rotate dashcam 180", &(who_called->_flip_image));
+    ImGui::Checkbox("Use dashcam", &(_use_dashcam));
+    ImGui::Checkbox("Rotate dashcam 180", &(_flip_image));
     ImGui::EndGroup();
 
     std::stringstream ss;
-    for (auto &i: who_called->_values) {
+    for (auto &i: _values) {
         ss << i << " ";
     }
     ImGui::Text("%s", ("Values to be sent: " + ss.str()).c_str());
 
     // opencv parameters
     ImGui::SeparatorText("OpenCV");
-    ImGui::Text("Markers: %ld", who_called->_marker_ids.size());
+    ImGui::Text("Markers: %ld", _marker_ids.size());
     ImGui::BeginGroup();
     ImGui::BeginTable("##cal_item_table", 2, ImGuiTableFlags_SizingFixedFit);
     ImGui::TableSetupColumn("##cal_item_title", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("##cal_item_value", ImGuiTableColumnFlags_WidthStretch);
-    for (int i = 0; i < who_called->_hsv_slider_names.size(); i++) {
+    for (int i = 0; i < _hsv_slider_names.size(); i++) {
         if (i < 2) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0,
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0,
                              180);
             ImGui::PopItemWidth();
         } else {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", who_called->_hsv_slider_names.at(i).c_str());
+            ImGui::Text("%s", _hsv_slider_names.at(i).c_str());
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(-FLT_MIN);
-            ImGui::SliderInt(who_called->_hsv_slider_names.at(i).c_str(), who_called->_pointer_hsv_thresholds.at(i), 0,
+            ImGui::SliderInt(_hsv_slider_names.at(i).c_str(), _pointer_hsv_thresholds.at(i), 0,
                              255);
             ImGui::PopItemWidth();
         }
@@ -465,7 +465,7 @@ void CZoomyClient::imgui_draw_settings(CZoomyClient *who_called) {
     ImGui::End();
 }
 
-void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
+void CZoomyClient::imgui_draw_waypoints() {
     ImGui::Begin("Waypoints");
     if (ImGui::BeginTable("##waypoints", 4,
                           (ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))) {
@@ -477,7 +477,7 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
         int wp_id = 0;
         char label[32];
         bool was_hovered = false;   // remember if row inside table was hovered
-        for (auto &i: who_called->_waypoints) {
+        for (auto &i: _waypoints) {
             std::stringstream ss;
             ss << "##waypoint_" << wp_id;
             ImGui::PushID(ss.str().c_str());
@@ -518,23 +518,23 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
     ImGui::End();
 }
 
-void CZoomyClient::imgui_draw_dashcam(CZoomyClient *who_called) {
+void CZoomyClient::imgui_draw_dashcam() {
     // dashcam image
     ImGui::Begin("Dashcam", nullptr, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
-        ImGui::MenuItem(who_called->_use_dashcam ? who_called->_dashcam_gst_string.c_str() : "none", nullptr, false,
+        ImGui::MenuItem(_use_dashcam ? _dashcam_gst_string.c_str() : "none", nullptr, false,
                         false);
         ImGui::EndMenuBar();
     }
 
-    who_called->_lockout_dashcam.lock();
+    _lockout_dashcam.lock();
     fit_texture_to_window(_dashcam_img, _dashcam_tex);
-    who_called->_lockout_dashcam.unlock();
+    _lockout_dashcam.unlock();
 
     ImGui::End();
 }
 
-void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
+void CZoomyClient::imgui_draw_arena() {
     // arena image
     ImGui::Begin("Arena", nullptr);
 
@@ -545,14 +545,14 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
 
     // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) who_called->_arena_img.cols) / ((float) who_called->_arena_img.rows);
+    float ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
     float viewport_ratio = viewport_size.x / viewport_size.y;
 
 //    if (_autonomous.isRunning()) {
 //        cv::Mat temp_img = _autonomous.get_masked_image();
 //        mat_to_tex(temp_img, _arena_tex);
 //    } else {
-    mat_to_tex(who_called->_arena_raw_img, who_called->_arena_tex);
+    mat_to_tex(_arena_raw_img, _arena_tex);
 //    }
 
     // Scale the image horizontally if the content region is wider than the image
@@ -563,7 +563,7 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
         last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) who_called->_arena_tex, ImVec2(imageWidth, viewport_size.y));
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
         scaled_size = imageWidth;
         how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
     }
@@ -573,7 +573,7 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
         last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) who_called->_arena_tex, ImVec2(viewport_size.x, imageHeight));
+        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
         scaled_size = imageHeight;
         how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
     }
@@ -581,9 +581,9 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
     if (ImGui::IsItemHovered()) {
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
                                         (ImGui::GetMousePos().y - last_cursor_pos.y) * how_much_to_scale_coordinates);
-        who_called->_arena_mouse_pos.x =
+        _arena_mouse_pos.x =
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
-        who_called->_arena_mouse_pos.y =
+        _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
         ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
                                                     ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
@@ -592,7 +592,7 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
     // plot waypoints in ImGui instead of OpenCV
     int wp = 0; // keep track of which waypoint plotted
     ImGui::GetWindowDrawList()->ChannelsSplit(2);
-    for (auto &i: who_called->_waypoints) {
+    for (auto &i: _waypoints) {
         ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
 
         // modify waypoint coords to fit on image
@@ -628,13 +628,12 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
     ImGui::End();
 }
 
-void CZoomyClient::imgui_draw_debug(CZoomyClient *who_called) {
+void CZoomyClient::imgui_draw_debug() {
     // imgui window (for debug)
     ImGui::Begin("ImGui", nullptr);
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
-    ImGui::Text("Arena mouse position: %d %d", (int) who_called->_arena_mouse_pos.x,
-                (int) who_called->_arena_mouse_pos.y);
-    ImGui::Text("Viewport %d %d", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
+    ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
     ImGui::SeparatorText("OpenCV Build Information");
     ImGui::Text("%s", cv::getBuildInformation().c_str());
     ImGui::ShowDemoWindow();
