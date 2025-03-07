@@ -474,12 +474,26 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
         ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
+        int wp_id = 0;
+        char label[32];
+        bool was_hovered = false;   // remember if row inside table was hovered
         for (auto &i: who_called->_waypoints) {
+            std::stringstream ss;
+            ss << "##waypoint_" << wp_id;
+            ImGui::PushID(ss.str().c_str());
             ImGui::TableNextRow();
             // X
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%d", i.coordinates.x);
+            snprintf(label, 32, "%d", i.coordinates.x);
+            bool a = false;
 
+            ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+            ImGui::Selectable(label, a, selectable_flags);
+
+            if (ImGui::IsItemHovered()) {
+                _wp_highlighted = wp_id;
+                was_hovered = true;
+            }
             // Y
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%d", i.coordinates.y);
@@ -493,7 +507,11 @@ void CZoomyClient::imgui_draw_waypoints(CZoomyClient *who_called) {
             ImGui::PushItemWidth(-FLT_MIN);
             ImGui::Text("%d", i.rotation);
             ImGui::PopItemWidth();
+
+            ImGui::PopID();
+            wp_id++;
         }
+        if (!was_hovered) _wp_highlighted = -1; // if nothing was hovered, set highlight to false
         ImGui::EndTable();
     }
     ImGui::End();
@@ -572,12 +590,17 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
 
     // plot waypoints in ImGui instead of OpenCV
     int wp = 0; // keep track of which waypoint plotted
+
     for (auto &i: who_called->_waypoints) {
         // modify waypoint coords to fit on image
         ImVec2 pt_ctr = ImVec2((i.coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
                                (i.coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
         // plot the waypoint
-        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+        if (wp == _wp_highlighted) {
+            ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)));
+        } else {
+            ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+        }
         if (wp) {   // if not the first waypoints
             auto last = std::prev(&i);  // get last waypoint
             // modify waypoint coords to fit on image
@@ -590,7 +613,8 @@ void CZoomyClient::imgui_draw_arena(CZoomyClient *who_called) {
         ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
                                             ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
                                                    pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
-                                            std::to_string(wp++).c_str());
+                                            std::to_string(wp).c_str());
+        wp++;
     }
 
     ImGui::End();

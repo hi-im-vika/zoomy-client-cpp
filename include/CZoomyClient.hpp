@@ -54,6 +54,7 @@ private:
     SDL_Event _evt;
     std::mutex _lockout_dashcam, _lockout_arena;
     ImVec2 _arena_mouse_pos;
+    int _wp_highlighted;
 
     // control
     CAutoController _autonomous;
