@@ -89,7 +89,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     // OpenCV init
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
-    _arena_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
+    _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
+    _arena_mask_img = _arena_img;
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
     _hsv_slider_names = {
@@ -227,9 +228,6 @@ void CZoomyClient::update() {
 
         _video_capture.read(_dashcam_raw_img);
 
-        _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
-        _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
-
         if (_flip_image) {
             cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
         }
@@ -245,6 +243,25 @@ void CZoomyClient::update() {
         _dashcam_img = _dashcam_raw_img;
     } else {
         _video_capture.release();
+    }
+
+    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
+    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+
+    if (_show_mask) {
+        cv::Mat pregen = _arena_raw_img;
+        cv::Mat hsv, inrange, mask, anded;
+
+        cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
+        cv::inRange(hsv,
+                    (cv::Scalar) _autonomous.get_hsv_threshold_low(),
+                    (cv::Scalar) _autonomous.get_hsv_threshold_high(),
+                    inrange);
+        inrange.convertTo(mask, CV_8UC1);
+        cv::bitwise_and(pregen, pregen, anded, mask);
+        _mutex_mask_gen.lock();
+        _arena_mask_img = anded;
+        _mutex_mask_gen.unlock();
     }
 
     if (_values.at(value_type::GC_Y)) {
@@ -571,7 +588,13 @@ void CZoomyClient::imgui_draw_arena() {
     }
 
     // copy out latest arena image
-    _arena_img = _arena_raw_img;
+    if (_show_mask) {
+        _mutex_mask_gen.lock();
+        _arena_img = _arena_mask_img;
+        _mutex_mask_gen.unlock();
+    } else {
+        _arena_img = _arena_raw_img;
+    }
     mat_to_tex(_arena_img, _arena_tex);
 
 //    float scaled_factor = 0.0f;
