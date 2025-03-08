@@ -564,7 +564,12 @@ void CZoomyClient::imgui_draw_dashcam() {
 
 void CZoomyClient::imgui_draw_arena() {
     // arena image
-    ImGui::Begin("Arena", nullptr);
+    ImGui::Begin("Arena", nullptr, ImGuiWindowFlags_MenuBar);
+
+    if (ImGui::BeginMenuBar()) {
+        ImGui::Checkbox("Overlay Mask", &_show_mask);
+        ImGui::EndMenuBar();
+    }
 
 //    float scaled_factor = 0.0f;
     ImVec2 last_cursor_pos;
