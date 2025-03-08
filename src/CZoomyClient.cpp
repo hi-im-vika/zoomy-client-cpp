@@ -570,6 +570,7 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::EndMenuBar();
     }
 
+    // copy out latest arena image
     _arena_img = _arena_raw_img;
     mat_to_tex(_arena_img, _arena_tex);
 
