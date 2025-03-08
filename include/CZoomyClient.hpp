@@ -51,8 +51,9 @@ private:
     cv::Mat _dashcam_area, _arena_area;
     cv::Mat _dashcam_img, _dashcam_raw_img;
     cv::Mat _arena_img, _arena_raw_img;
+    cv::Mat _arena_mask_img;
     SDL_Event _evt;
-    std::mutex _lockout_dashcam, _lockout_arena;
+    std::mutex _mutex_dashcam, _mutex_arena, _mutex_mask_gen;
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
 
@@ -70,6 +71,7 @@ private:
     cv::VideoCapture _video_capture;
     std::string _dashcam_gst_string;
     bool _flip_image;
+    bool _show_mask;
     std::vector<std::string> _hsv_slider_names;
     cv::Scalar_<int> _hsv_threshold_low, _hsv_threshold_high;
     std::vector<int*> _pointer_hsv_thresholds;
