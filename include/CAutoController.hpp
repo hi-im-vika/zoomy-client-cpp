@@ -22,11 +22,8 @@ private:
     std::mutex _imgLock;
 
     static void autoTargetThread(CAutoController* ptr);
-
     static void runToPointThread(CAutoController* ptr);
-
     void autoTarget();
-
     void runToPoint();
 
     std::vector<int> _marker_ids;
@@ -52,24 +49,18 @@ public:
     };
 
     CAutoController();
-
     ~CAutoController();
 
     bool init(cv::Mat *car, cv::Mat *above);
-
     void startAutoTarget(int id);
-
     void endAutoTarget();
-
     void startRunToPoint(cv::Point point, int speed);
-
     void endRunToPoint();
-
     int getAutoInput(int type);
-
     bool isRunning();
 
     cv::Mat get_masked_image();
+
 
     cv::Scalar_<int> get_hsv_threshold_low();
     cv::Scalar_<int> get_hsv_threshold_high();

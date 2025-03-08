@@ -26,8 +26,6 @@ CZoomyClient::CZoomyClient(cv::Size s) {
         exit(-1);
     }
 
-    std::stringstream ss;
-
 //    // control init
 
     _values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -434,43 +432,87 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::EndDisabled();
 
     ImGui::SeparatorText("Networking");
+
+    // placeholder values
     static char udp_host[64] = "192.168.1.104";
     static char udp_port[64] = "46188";
     static char tcp_host[64] = "127.0.0.1";
     static char tcp_port[64] = "4006";
+
+    ImGui::BeginGroup();
+
+    // draw udp conn details table
     ImGui::BeginDisabled(_udp_req_ready);
+    ImGui::BeginTable("##udp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##udp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##udp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("UDP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
         _udp_host = udp_host;
         _udp_port = udp_port;
         _udp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
+    // draw udp conn details table
     ImGui::BeginDisabled(_tcp_req_ready);
+    ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+    ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Host:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::PopItemWidth();
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
     ImGui::Text("TCP Port:");
-    ImGui::SameLine();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to TCP")) {
         _tcp_host = tcp_host;
         _tcp_port = tcp_port;
         _tcp_req_ready = true;
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
+    ImGui::EndGroup();
 
+    // draw checkboxes for toggleable values
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::EndGroup();
 
+    // TODO: determine maximum number of values to send and remove stringstream
     std::stringstream ss;
     for (auto &i: _values) {
         ss << i << " ";
@@ -518,13 +560,12 @@ void CZoomyClient::imgui_draw_waypoints() {
         ImGui::TableSetupColumn("Speed##waypoints_speed", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Rotation##waypoints_rotation", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
-        int wp_id = 0;
+        int wp_id = 0;  // keep track of current waypoint
         char label[32];
         bool was_hovered = false;   // remember if row inside table was hovered
         for (auto &i: _waypoints) {
-            std::stringstream ss;
-            ss << "##waypoint_" << wp_id;
-            ImGui::PushID(ss.str().c_str());
+            snprintf(label, 32, "##waypoint_%d", wp_id);
+            ImGui::PushID(label);
             ImGui::TableNextRow();
             // X
             ImGui::TableSetColumnIndex(0);
@@ -583,7 +624,9 @@ void CZoomyClient::imgui_draw_arena() {
     ImGui::Begin("Arena", nullptr, ImGuiWindowFlags_MenuBar);
 
     if (ImGui::BeginMenuBar()) {
+        ImGui::BeginDisabled(_arena_raw_img.empty());
         ImGui::Checkbox("Overlay Mask", &_show_mask);
+        ImGui::EndDisabled();
         ImGui::EndMenuBar();
     }
 
@@ -595,57 +638,22 @@ void CZoomyClient::imgui_draw_arena() {
     } else {
         _arena_img = _arena_raw_img;
     }
-    mat_to_tex(_arena_img, _arena_tex);
 
-//    float scaled_factor = 0.0f;
+    float scaled_factor = 0.0f;
     ImVec2 last_cursor_pos;
-//    fit_texture_to_window(who_called->_arena_raw_img, who_called->_arena_tex, &scaled_factor, &last_cur_pos);
-//    float how_much_to_scale_coordinates = ARENA_DIM / scaled_factor;
-
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
-    float viewport_ratio = viewport_size.x / viewport_size.y;
-
-//    if (_autonomous.isRunning()) {
-//        cv::Mat temp_img = _autonomous.get_masked_image();
-//        mat_to_tex(temp_img, _arena_tex);
-//    } else {
-
-//    }
-
-    // Scale the image horizontally if the content region is wider than the image
-    float scaled_size = 0.0f;
-    float how_much_to_scale_coordinates = 0.0f;
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
-        scaled_size = imageWidth;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
-        scaled_size = imageHeight;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
+    fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
+    mat_to_tex(_arena_img, _arena_tex);
+    float coord_scale = ARENA_DIM / scaled_factor;
 
     if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
-                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * how_much_to_scale_coordinates);
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * coord_scale,
+                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * coord_scale);
         _arena_mouse_pos.x =
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
-                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+//        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
+//                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
     }
 
     // plot waypoints in ImGui instead of OpenCV
@@ -655,8 +663,8 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
 
         // modify waypoint coords to fit on image
-        ImVec2 pt_ctr = ImVec2((i.coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
-                               (i.coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+        ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
+                               ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
 
         // plot the waypoint
         ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
@@ -674,11 +682,11 @@ void CZoomyClient::imgui_draw_arena() {
         if (wp) {   // if not the first waypoints
             auto last = std::prev(&i);  // get last waypoint
             // modify waypoint coords to fit on image
-            ImVec2 last_pt_ctr = ImVec2((last->coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
-                                        (last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+            ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
+                                        ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
             // draw line from prev waypoint to current waypoint
-//            maybe add arrow to line
-//            ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
+            // maybe add arrow to line
+            // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
             ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
         }
         wp++;
@@ -738,8 +746,7 @@ void CZoomyClient::update_udp() {
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     } else {
         for (; !_udp_rx_queue.empty(); _udp_rx_queue.pop()) {
-
-//            // acknowledge next data in queue
+            // acknowledge next data in queue
             spdlog::info("New in RX queue with size: " + std::to_string(_udp_rx_queue.front().size()));
 
             // reset timeout
@@ -860,9 +867,9 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 // only call this from inside imgui window
-void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale,
-                                         ImVec2 *last_cursor_screen_pos) {
-// from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale,
+                                         ImVec2 &cursor_screen_pos_before_image) {
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
     float ratio = ((float) input_image.cols) / ((float) input_image.rows);
     float viewport_ratio = viewport_size.x / viewport_size.y;
@@ -873,19 +880,26 @@ void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_te
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        cursor_screen_pos_before_image = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(imageWidth, viewport_size.y));
-        if (scale) *scale = imageWidth;
+        scale = imageWidth;
     }
-        // Scale the image vertically if the content region is taller than the image
+    // Scale the image vertically if the content region is taller than the image
     else {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        cursor_screen_pos_before_image = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(viewport_size.x, imageHeight));
-        if (scale) *scale = imageHeight;
+        scale = imageHeight;
     }
+}
 
-    if (last_cursor_screen_pos) *last_cursor_screen_pos = ImGui::GetCursorScreenPos();
+// only call this from inside imgui window
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture) {
+    float dont_care_float;
+    ImVec2 dont_care_imvec;
+    fit_texture_to_window(input_image, output_texture, dont_care_float, dont_care_imvec);
 }
 
 int main(int argc, char *argv[]) {
