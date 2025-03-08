@@ -121,6 +121,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
     _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
 
+    // waypoints
     // check if json exists, load if so, create if not
     std::ifstream i("waypoints.json");
     if (!i.good()) {
@@ -155,6 +156,44 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             (int) it["rotation"],
             (bool) it["enable_turret"]});
     }
+    i.close();
+
+    // settings
+    i = std::ifstream("settings.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"settings", {
+                        {"networking", {
+                                {"udp", {
+                                        {"host", "192.168.1.104"},
+                                        {"port", "46188"}}
+                                        },
+                                {"tcp", {
+                                         {"host", "192.168.1.156"},
+                                         {"port", "4006"}
+                                 }}
+                        }},
+                        {"opencv", {
+                                {"hue", {8, 18}},
+                                {"sat", {122,255}},
+                                {"val", {141,255}}
+                        }},
+                }}};
+        std::ofstream o("settings.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("settings.json");
+    }
+
+    _json_data.clear();
+    i >> _json_data;
+    snprintf(_host_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["host"]).c_str());
+    snprintf(_port_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["port"]).c_str());
+    snprintf(_host_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["host"]).c_str());
+    snprintf(_port_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["port"]).c_str());
     i.close();
 
     // preallocate texture handle
@@ -404,12 +443,6 @@ void CZoomyClient::imgui_draw_settings() {
 
     ImGui::SeparatorText("Networking");
 
-    // placeholder values
-    static char udp_host[64] = "192.168.1.104";
-    static char udp_port[64] = "46188";
-    static char tcp_host[64] = "127.0.0.1";
-    static char tcp_port[64] = "4006";
-
     ImGui::BeginGroup();
 
     // draw udp conn details table
@@ -423,7 +456,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Host:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::InputText("###udp_host_input", _host_udp, 64);
     ImGui::PopItemWidth();
 
     ImGui::TableNextRow();
@@ -431,14 +464,14 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Port:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::InputText("###udp_port_input", _port_udp, 64);
     ImGui::PopItemWidth();
     ImGui::EndTable();
 
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
-        _udp_host = udp_host;
-        _udp_port = udp_port;
+        _udp_host = _host_udp;
+        _udp_port = _port_udp;
         _udp_req_ready = true;
     }
     ImGui::PopItemWidth();
@@ -455,7 +488,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("TCP Host:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_host_input", tcp_host, 64);
+    ImGui::InputText("###tcp_host_input", _host_tcp, 64);
     ImGui::PopItemWidth();
 
     ImGui::TableNextRow();
@@ -463,14 +496,14 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("TCP Port:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_port_input", tcp_port, 64);
+    ImGui::InputText("###tcp_port_input", _port_tcp, 64);
     ImGui::PopItemWidth();
     ImGui::EndTable();
 
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to TCP")) {
-        _tcp_host = tcp_host;
-        _tcp_port = tcp_port;
+        _tcp_host = _host_tcp;
+        _tcp_port = _port_tcp;
         _tcp_req_ready = true;
     }
     ImGui::PopItemWidth();

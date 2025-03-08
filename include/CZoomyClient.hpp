@@ -60,6 +60,10 @@ private:
     std::mutex _mutex_dashcam, _mutex_arena, _mutex_mask_gen;
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
+    char _host_udp[64];
+    char _port_udp[64];
+    char _host_tcp[64];
+    char _port_tcp[64];
 
     // control
     std::ifstream _json_file;
