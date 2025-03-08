@@ -114,7 +114,9 @@ private:
     void imgui_draw_arena();
     void imgui_draw_debug();
 
-    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale = nullptr, ImVec2 *last_cursor_screen_pos = nullptr);
+    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture);
+    static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale, ImVec2 &cursor_screen_pos_before_image);
+
     static void mat_to_tex(cv::Mat &input, GLuint &output);
 
     void udp_rx();

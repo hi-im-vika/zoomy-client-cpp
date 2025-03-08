@@ -638,47 +638,12 @@ void CZoomyClient::imgui_draw_arena() {
     } else {
         _arena_img = _arena_raw_img;
     }
-    mat_to_tex(_arena_img, _arena_tex);
 
-//    float scaled_factor = 0.0f;
+    float scaled_factor = 0.0f;
     ImVec2 last_cursor_pos;
-//    fit_texture_to_window(who_called->_arena_raw_img, who_called->_arena_tex, &scaled_factor, &last_cur_pos);
-//    float how_much_to_scale_coordinates = ARENA_DIM / scaled_factor;
-
-    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
-    ImVec2 viewport_size = ImGui::GetContentRegionAvail();
-    float ratio = ((float) _arena_img.cols) / ((float) _arena_img.rows);
-    float viewport_ratio = viewport_size.x / viewport_size.y;
-
-//    if (_autonomous.isRunning()) {
-//        cv::Mat temp_img = _autonomous.get_masked_image();
-//        mat_to_tex(temp_img, _arena_tex);
-//    } else {
-
-//    }
-
-    // Scale the image horizontally if the content region is wider than the image
-    float scaled_size = 0.0f;
-    float how_much_to_scale_coordinates = 0.0f;
-    if (viewport_ratio > ratio) {
-        float imageWidth = viewport_size.y * ratio;
-        float xPadding = (viewport_size.x - imageWidth) / 2;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-        last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(imageWidth, viewport_size.y));
-        scaled_size = imageWidth;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
-        // Scale the image vertically if the content region is taller than the image
-    else {
-        float imageHeight = viewport_size.x / ratio;
-        float yPadding = (viewport_size.y - imageHeight) / 2;
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
-        last_cursor_pos = ImGui::GetCursorScreenPos();
-        ImGui::Image((ImTextureID) (intptr_t) _arena_tex, ImVec2(viewport_size.x, imageHeight));
-        scaled_size = imageHeight;
-        how_much_to_scale_coordinates = ARENA_DIM / scaled_size;
-    }
+    fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
+    mat_to_tex(_arena_img, _arena_tex);
+    float how_much_to_scale_coordinates = ARENA_DIM / scaled_factor;
 
     if (ImGui::IsItemHovered()) {
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
@@ -720,8 +685,8 @@ void CZoomyClient::imgui_draw_arena() {
             ImVec2 last_pt_ctr = ImVec2((last->coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
                                         (last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
             // draw line from prev waypoint to current waypoint
-//            maybe add arrow to line
-//            ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
+            // maybe add arrow to line
+            // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
             ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
         }
         wp++;
@@ -781,8 +746,7 @@ void CZoomyClient::update_udp() {
         std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(NET_DELAY));
     } else {
         for (; !_udp_rx_queue.empty(); _udp_rx_queue.pop()) {
-
-//            // acknowledge next data in queue
+            // acknowledge next data in queue
             spdlog::info("New in RX queue with size: " + std::to_string(_udp_rx_queue.front().size()));
 
             // reset timeout
@@ -903,9 +867,9 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 }
 
 // only call this from inside imgui window
-void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float *scale,
-                                         ImVec2 *last_cursor_screen_pos) {
-// from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale,
+                                         ImVec2 &cursor_screen_pos_before_image) {
+    // from https://www.reddit.com/r/opengl/comments/114lxvr/imgui_viewport_texture_not_fitting_scaling_to/
     ImVec2 viewport_size = ImGui::GetContentRegionAvail();
     float ratio = ((float) input_image.cols) / ((float) input_image.rows);
     float viewport_ratio = viewport_size.x / viewport_size.y;
@@ -916,19 +880,26 @@ void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_te
         float imageWidth = viewport_size.y * ratio;
         float xPadding = (viewport_size.x - imageWidth) / 2;
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+        cursor_screen_pos_before_image = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(imageWidth, viewport_size.y));
-        if (scale) *scale = imageWidth;
+        scale = imageWidth;
     }
-        // Scale the image vertically if the content region is taller than the image
+    // Scale the image vertically if the content region is taller than the image
     else {
         float imageHeight = viewport_size.x / ratio;
         float yPadding = (viewport_size.y - imageHeight) / 2;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yPadding);
+        cursor_screen_pos_before_image = ImGui::GetCursorScreenPos();
         ImGui::Image((ImTextureID) (intptr_t) output_texture, ImVec2(viewport_size.x, imageHeight));
-        if (scale) *scale = imageHeight;
+        scale = imageHeight;
     }
+}
 
-    if (last_cursor_screen_pos) *last_cursor_screen_pos = ImGui::GetCursorScreenPos();
+// only call this from inside imgui window
+void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture) {
+    float dont_care_float;
+    ImVec2 dont_care_imvec;
+    fit_texture_to_window(input_image, output_texture, dont_care_float, dont_care_imvec);
 }
 
 int main(int argc, char *argv[]) {
