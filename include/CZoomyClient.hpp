@@ -52,7 +52,7 @@ private:
     cv::Mat _dashcam_img, _dashcam_raw_img;
     cv::Mat _arena_img, _arena_raw_img;
     SDL_Event _evt;
-    std::mutex _lockout_dashcam, _lockout_arena;
+    std::mutex _mutex_dashcam, _mutex_arena;
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
 

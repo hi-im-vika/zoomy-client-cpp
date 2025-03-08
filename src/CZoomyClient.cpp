@@ -555,9 +555,9 @@ void CZoomyClient::imgui_draw_dashcam() {
         ImGui::EndMenuBar();
     }
 
-    _lockout_dashcam.lock();
+    _mutex_dashcam.lock();
     fit_texture_to_window(_dashcam_img, _dashcam_tex);
-    _lockout_dashcam.unlock();
+    _mutex_dashcam.unlock();
 
     ImGui::End();
 }
