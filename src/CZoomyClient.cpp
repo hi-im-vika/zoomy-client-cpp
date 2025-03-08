@@ -652,8 +652,8 @@ void CZoomyClient::imgui_draw_arena() {
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
-                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
+//        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
+//                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
     }
 
     // plot waypoints in ImGui instead of OpenCV
