@@ -246,7 +246,6 @@ void CZoomyClient::update() {
     } else {
         _video_capture.release();
     }
-    //_arena_img = _arena_raw_img;
 
     if (_values.at(value_type::GC_Y)) {
         _auto = true;
@@ -571,6 +570,9 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::EndMenuBar();
     }
 
+    _arena_img = _arena_raw_img;
+    mat_to_tex(_arena_img, _arena_tex);
+
 //    float scaled_factor = 0.0f;
     ImVec2 last_cursor_pos;
 //    fit_texture_to_window(who_called->_arena_raw_img, who_called->_arena_tex, &scaled_factor, &last_cur_pos);
@@ -585,7 +587,7 @@ void CZoomyClient::imgui_draw_arena() {
 //        cv::Mat temp_img = _autonomous.get_masked_image();
 //        mat_to_tex(temp_img, _arena_tex);
 //    } else {
-    mat_to_tex(_arena_raw_img, _arena_tex);
+
 //    }
 
     // Scale the image horizontally if the content region is wider than the image
