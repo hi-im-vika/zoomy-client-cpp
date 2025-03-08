@@ -643,11 +643,11 @@ void CZoomyClient::imgui_draw_arena() {
     ImVec2 last_cursor_pos;
     fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
     mat_to_tex(_arena_img, _arena_tex);
-    float how_much_to_scale_coordinates = ARENA_DIM / scaled_factor;
+    float coord_scale = ARENA_DIM / scaled_factor;
 
     if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * how_much_to_scale_coordinates,
-                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * how_much_to_scale_coordinates);
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * coord_scale,
+                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * coord_scale);
         _arena_mouse_pos.x =
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
@@ -663,8 +663,8 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
 
         // modify waypoint coords to fit on image
-        ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
-                               ((float) i.coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+        ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
+                               ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
 
         // plot the waypoint
         ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
@@ -682,8 +682,8 @@ void CZoomyClient::imgui_draw_arena() {
         if (wp) {   // if not the first waypoints
             auto last = std::prev(&i);  // get last waypoint
             // modify waypoint coords to fit on image
-            ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / how_much_to_scale_coordinates) + last_cursor_pos.x,
-                                        ((float) last->coordinates.y / how_much_to_scale_coordinates) + last_cursor_pos.y);
+            ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
+                                        ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
             // draw line from prev waypoint to current waypoint
             // maybe add arrow to line
             // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
