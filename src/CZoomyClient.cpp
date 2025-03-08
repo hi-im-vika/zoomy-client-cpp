@@ -624,7 +624,9 @@ void CZoomyClient::imgui_draw_arena() {
     ImGui::Begin("Arena", nullptr, ImGuiWindowFlags_MenuBar);
 
     if (ImGui::BeginMenuBar()) {
+        ImGui::BeginDisabled(_arena_raw_img.empty());
         ImGui::Checkbox("Overlay Mask", &_show_mask);
+        ImGui::EndDisabled();
         ImGui::EndMenuBar();
     }
 
