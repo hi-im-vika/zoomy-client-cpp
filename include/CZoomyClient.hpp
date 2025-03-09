@@ -72,6 +72,7 @@ private:
     std::string _dashcam_gst_string;
     bool _flip_image;
     bool _show_mask;
+    bool _show_waypoints;
     std::vector<std::string> _hsv_slider_names;
     cv::Scalar_<int> _hsv_threshold_low, _hsv_threshold_high;
     std::vector<int*> _pointer_hsv_thresholds;

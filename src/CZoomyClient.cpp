@@ -88,6 +88,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
+    _arena_raw_img = _arena_img;
     _arena_mask_img = _arena_img;
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
@@ -625,7 +626,8 @@ void CZoomyClient::imgui_draw_arena() {
 
     if (ImGui::BeginMenuBar()) {
         ImGui::BeginDisabled(_arena_raw_img.empty());
-        ImGui::Checkbox("Overlay Mask", &_show_mask);
+        ImGui::Checkbox("Mask", &_show_mask);
+        ImGui::Checkbox("Waypoints", &_show_waypoints);
         ImGui::EndDisabled();
         ImGui::EndMenuBar();
     }
@@ -652,44 +654,44 @@ void CZoomyClient::imgui_draw_arena() {
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-//        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
-//                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
     }
 
-    // plot waypoints in ImGui instead of OpenCV
-    int wp = 0; // keep track of which waypoint plotted
-    ImGui::GetWindowDrawList()->ChannelsSplit(2);
-    for (auto &i: _waypoints) {
-        ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
+    if (_show_waypoints) {
+        // plot waypoints in ImGui instead of OpenCV
+        int wp = 0; // keep track of which waypoint plotted
+        ImGui::GetWindowDrawList()->ChannelsSplit(2);
+        for (auto &i: _waypoints) {
+            ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
 
-        // modify waypoint coords to fit on image
-        ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
-                               ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
-
-        // plot the waypoint
-        ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
-                ImVec4(1.0f, 1.0f, 0.4f, 1.0f));
-        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, wp_colour);
-
-        // draw waypoint index on top of waypoint
-        ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
-                                            ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
-                                                   pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
-                                            std::to_string(wp).c_str());
-
-        // draw connecting line
-        ImGui::GetWindowDrawList()->ChannelsSetCurrent(0);
-        if (wp) {   // if not the first waypoints
-            auto last = std::prev(&i);  // get last waypoint
             // modify waypoint coords to fit on image
-            ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
-                                        ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
-            // draw line from prev waypoint to current waypoint
-            // maybe add arrow to line
-            // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
-            ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
+            ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
+                                   ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
+
+            // plot the waypoint
+            ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
+                    ImVec4(1.0f, 1.0f, 0.4f, 1.0f));
+            ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, wp_colour);
+
+            // draw waypoint index on top of waypoint
+            ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                                                ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
+                                                       pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
+                                                std::to_string(wp).c_str());
+
+            // draw connecting line
+            ImGui::GetWindowDrawList()->ChannelsSetCurrent(0);
+            if (wp) {   // if not the first waypoints
+                auto last = std::prev(&i);  // get last waypoint
+                // modify waypoint coords to fit on image
+                ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
+                                            ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
+                // draw line from prev waypoint to current waypoint
+                // maybe add arrow to line
+                // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
+                ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
+            }
+            wp++;
         }
-        wp++;
     }
 
     ImGui::End();
