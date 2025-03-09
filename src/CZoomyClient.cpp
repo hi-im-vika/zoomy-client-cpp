@@ -88,8 +88,6 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
-//    _arena_raw_img = _arena_img;
-    _arena_mask_img = _arena_img;
     bool white = true;
     cv::Vec3b pix_white(255,255,255);
     cv::Vec3b pix_black(0,0,0);
@@ -105,6 +103,9 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             }
         }
     }
+    _arena_raw_img = _arena_img.clone();
+    _arena_mask_img = _arena_img.clone();
+    _arena_warped_img = _arena_img.clone();
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
     _hsv_slider_names = {
