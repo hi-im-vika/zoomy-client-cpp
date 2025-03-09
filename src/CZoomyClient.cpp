@@ -90,6 +90,21 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
 //    _arena_raw_img = _arena_img;
     _arena_mask_img = _arena_img;
+    bool white = true;
+    cv::Vec3b pix_white(255,255,255);
+    cv::Vec3b pix_black(0,0,0);
+    int skip = ARENA_DIM / 8.0f;
+    for (int y = 0; y < _arena_img.rows; y++) {
+        if (!(y % skip)) white = !white;
+        for (int x = 0; x < _arena_img.cols; x++) {
+            if (!(x % skip)) white = !white;
+            if (white) {
+                _arena_img.at<cv::Vec3b>(y,x) = pix_white;
+            } else {
+                _arena_img.at<cv::Vec3b>(y,x) = pix_black;
+            }
+        }
+    }
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
     _hsv_slider_names = {
