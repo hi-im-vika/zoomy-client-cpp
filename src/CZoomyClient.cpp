@@ -217,6 +217,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
+    glGenTextures(1, &_preview_tex);
 
 //    // net init
 //    // TODO: thread network update separately from
