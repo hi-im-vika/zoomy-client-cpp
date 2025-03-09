@@ -273,6 +273,42 @@ void CZoomyClient::update() {
     _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
     _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
 
+    // calculate values for homography
+    // make vector of points for quad
+    _quad_points = {
+            ImVec2((float) _homography_corners.at(0).x, (float) _homography_corners.at(0).y),
+            ImVec2((float) _homography_corners.at(1).x, (float) _homography_corners.at(1).y),
+            ImVec2((float) _homography_corners.at(2).x, (float) _homography_corners.at(2).y),
+            ImVec2((float) _homography_corners.at(3).x, (float) _homography_corners.at(3).y)
+    };
+
+    // get scale between real arena image and imgui displayed image
+    _coord_scale = ARENA_DIM / _arena_scale_factor;
+
+    // keep track of mouse distance to quad points
+    for (int i = 0; i < _quad_points.size(); i++) {
+        _dist_quad_points.at(i) = sqrt(pow((_arena_mouse_pos.x - _quad_points.at(i).x),2) + pow((_arena_mouse_pos.y - _quad_points.at(i).y),2));
+    }
+
+    // get scaled quad points
+    for (int i = 0; i < _quad_points.size(); i++) {
+        _quad_points_scaled.at(i) = ImVec2(
+                (_quad_points.at(i).x / _coord_scale) + _arena_last_cursor_pos.x,
+                (_quad_points.at(i).y / _coord_scale) + _arena_last_cursor_pos.y
+        );
+    }
+
+    // find closest quad point
+    auto it = std::min_element(std::begin(_dist_quad_points), std::end(_dist_quad_points));
+    _closest_quad_point = (int) std::distance(std::begin(_dist_quad_points),it);
+
+    cv::Mat image_to_warp = _arena_raw_img.clone();
+    std::vector<cv::Point2f> end = {cv::Point2f(0, 0), cv::Point2f(ARENA_DIM, 0), cv::Point2f(ARENA_DIM, ARENA_DIM),
+                                    cv::Point2f(0, ARENA_DIM)};
+    cv::Mat arena_homography = cv::findHomography(_homography_corners, end);
+    cv::warpPerspective(image_to_warp, image_to_warp, arena_homography, cv::Size(ARENA_DIM, ARENA_DIM));
+    _arena_warped_img = image_to_warp.clone();
+
     if (_show_mask) {
         cv::Mat pregen = _arena_raw_img;
         cv::Mat hsv, inrange, mask, anded;
