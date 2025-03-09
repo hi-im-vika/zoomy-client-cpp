@@ -661,7 +661,6 @@ void CZoomyClient::imgui_draw_arena() {
     float scaled_factor = 0.0f;
     ImVec2 last_cursor_pos;
     fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
-    mat_to_tex(_arena_img, _arena_tex);
     float coord_scale = ARENA_DIM / scaled_factor;
 
     // make vector of points for quad
