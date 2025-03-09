@@ -310,7 +310,7 @@ void CZoomyClient::update() {
     _arena_warped_img = image_to_warp.clone();
 
     if (_show_mask) {
-        cv::Mat pregen = _arena_raw_img;
+        cv::Mat pregen = _arena_raw_img.clone();
         cv::Mat hsv, inrange, mask, anded;
 
         cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
@@ -320,9 +320,7 @@ void CZoomyClient::update() {
                     inrange);
         inrange.convertTo(mask, CV_8UC1);
         cv::bitwise_and(pregen, pregen, anded, mask);
-        _mutex_mask_gen.lock();
-        _arena_mask_img = anded;
-        _mutex_mask_gen.unlock();
+        _arena_mask_img = anded.clone();
     }
 
     if (_values.at(value_type::GC_Y)) {
