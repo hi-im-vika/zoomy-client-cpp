@@ -84,6 +84,10 @@ private:
     cv::aruco::Dictionary _dictionary;
     cv::aruco::ArucoDetector _detector;
 
+    // opencv homography
+    std::vector<cv::Point> _homography_corners;
+    bool _show_homography;
+
     // net (udp)
     bool _udp_req_ready;
     std::string _udp_host;
