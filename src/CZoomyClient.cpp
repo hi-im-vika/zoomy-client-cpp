@@ -647,6 +647,23 @@ void CZoomyClient::imgui_draw_arena() {
     mat_to_tex(_arena_img, _arena_tex);
     float coord_scale = ARENA_DIM / scaled_factor;
 
+    // make vector of points for quad
+    static std::vector<ImVec2> quad_points = {
+            ImVec2(100,100),
+            ImVec2(200,100),
+            ImVec2(200,200),
+            ImVec2(100,200)
+    };
+
+    // make quad coordinates absolute
+    static std::vector<ImVec2> quad_points_scaled(4, ImVec2(0,0));
+    for (int i = 0; i < quad_points.size(); i++) {
+        quad_points_scaled.at(i) = ImVec2(
+                (quad_points.at(i).x / coord_scale) + last_cursor_pos.x,
+                (quad_points.at(i).y / coord_scale) + last_cursor_pos.y
+                );
+    }
+
     if (ImGui::IsItemHovered()) {
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * coord_scale,
                                         (ImGui::GetMousePos().y - last_cursor_pos.y) * coord_scale);
@@ -654,7 +671,47 @@ void CZoomyClient::imgui_draw_arena() {
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
+
+        // keep track of mouse distance to quad points
+        static std::vector<double> dist_to_quad_points(4,0.0f);
+        for (int i = 0; i < quad_points.size(); i++) {
+            dist_to_quad_points.at(i) = sqrt(pow((arena_mouse_pos.x - quad_points.at(i).x),2) + pow((arena_mouse_pos.y - quad_points.at(i).y),2));
+        }
+
+        // find closest quad point
+        auto it = std::min_element(std::begin(dist_to_quad_points), std::end(dist_to_quad_points));
+        int closest_point = (int) std::distance(std::begin(dist_to_quad_points),it);
+
+        // print mouse location info
+        ImGui::Text("(%d, %d)", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+        ImGui::Text("dp1, dp2, dp3, dp4: %.2f, %.2f, %.2f, %.2f",
+                    dist_to_quad_points.at(0),
+                    dist_to_quad_points.at(1),
+                    dist_to_quad_points.at(2),
+                    dist_to_quad_points.at(3));
+        ImGui::Text("Closest to: %d", closest_point + 1);
+
+        // implement drag to reshape quad without having to be directly over corner
+        static bool dragging = false;
+        static ImVec2 drag_start_pos(0,0);
+        static ImVec2 last_qp_pos(0,0);
+        static int point_that_matters;  // ignore other points even when they become closer
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            if (!dragging) {
+                dragging = true;
+                point_that_matters = closest_point;
+                drag_start_pos = _arena_mouse_pos;
+                last_qp_pos = quad_points.at(point_that_matters);
+            }
+            quad_points.at(point_that_matters) = ImVec2(last_qp_pos.x + (_arena_mouse_pos.x - drag_start_pos.x),
+                                                        last_qp_pos.y + (_arena_mouse_pos.y - drag_start_pos.y));
+        } else {
+            dragging = false;
+        }
     }
+
+    // draw the quad
+    ImGui::GetWindowDrawList()->AddQuad(quad_points_scaled.at(0), quad_points_scaled.at(1), quad_points_scaled.at(2), quad_points_scaled.at(3), IM_COL32_WHITE);
 
     if (_show_waypoints) {
         // plot waypoints in ImGui instead of OpenCV
