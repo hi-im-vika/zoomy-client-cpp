@@ -47,6 +47,7 @@ private:
     std::unique_ptr<CWindow> _window;
     GLuint _dashcam_tex;
     GLuint _arena_tex;
+    GLuint _preview_tex;
     bool _use_dashcam;
     cv::Mat _dashcam_area, _arena_area;
     cv::Mat _dashcam_img, _dashcam_raw_img;
@@ -86,7 +87,15 @@ private:
 
     // opencv homography
     std::vector<cv::Point> _homography_corners;
+    std::vector<ImVec2> _quad_points;
+    std::vector<ImVec2> _quad_points_scaled;
+    std::vector<double> _dist_quad_points;
+    int _closest_quad_point;
     bool _show_homography;
+    float _arena_scale_factor;
+    float _coord_scale;
+    ImVec2 _arena_last_cursor_pos;
+    cv::Mat _arena_warped_img;
 
     // net (udp)
     bool _udp_req_ready;
