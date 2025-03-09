@@ -255,9 +255,7 @@ void CZoomyClient::update() {
 
         _video_capture.read(_dashcam_raw_img);
 
-        if (_flip_image) {
-            cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
-        }
+        if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
 
         if (!_dashcam_raw_img.empty()) {
             _detector_params = cv::aruco::DetectorParameters();
