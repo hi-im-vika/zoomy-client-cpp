@@ -132,6 +132,10 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             cv::Point(100,200)
     };
 
+    _quad_points = std::vector<ImVec2>(4);
+    _quad_points_scaled = std::vector<ImVec2>(4);
+    _dist_quad_points = std::vector<double>(4);
+
     // control init
     if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
         spdlog::error("Error during CAutoController init.");
