@@ -787,8 +787,8 @@ void CZoomyClient::imgui_draw_arena() {
             ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
 
             // modify waypoint coords to fit on image
-            ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
-                                   ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
+            ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / _coord_scale) + _arena_last_cursor_pos.x,
+                                   ((float) i.coordinates.y / _coord_scale) + _arena_last_cursor_pos.y);
 
             // plot the waypoint
             ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
@@ -806,8 +806,8 @@ void CZoomyClient::imgui_draw_arena() {
             if (wp) {   // if not the first waypoints
                 auto last = std::prev(&i);  // get last waypoint
                 // modify waypoint coords to fit on image
-                ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
-                                            ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
+                ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / _coord_scale) + _arena_last_cursor_pos.x,
+                                            ((float) last->coordinates.y / _coord_scale) + _arena_last_cursor_pos.y);
                 // draw line from prev waypoint to current waypoint
                 // maybe add arrow to line
                 // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
