@@ -430,7 +430,7 @@ void CZoomyClient::draw() {
     ImGui::Render();
 
     // render ImGui with OpenGL
-    glViewport(0, 0, static_cast<int>(io.DisplaySize.x), static_cast<int>(io.DisplaySize.y));
+    glViewport(0, 0, (int) io.DisplaySize.x, (int) io.DisplaySize.y);
     glClearColor(0.5F, 0.5F, 0.5F, 1.00F);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
