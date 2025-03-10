@@ -755,7 +755,29 @@ void CZoomyClient::imgui_draw_arena() {
     }
 
     // draw the quad
-    ImGui::GetWindowDrawList()->AddQuad(quad_points_scaled.at(0), quad_points_scaled.at(1), quad_points_scaled.at(2), quad_points_scaled.at(3), IM_COL32_WHITE);
+    ImGui::GetWindowDrawList()->AddQuad(
+            _quad_points_scaled.at(0),
+            _quad_points_scaled.at(1),
+            _quad_points_scaled.at(2),
+            _quad_points_scaled.at(3),
+            ImColor(ImVec4(0.0f,1.0f,0.0f,1.0f)),
+            3
+            );
+
+    // minimap for homography preview
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+    ImVec2 window_pos = _arena_last_cursor_pos;
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, ImVec2(0.0f,0.0f));
+    window_flags |= ImGuiWindowFlags_NoMove;
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    cv::Mat copied = _arena_warped_img.clone();
+    mat_to_tex(copied, _preview_tex);
+    copied.release();
+    if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags)) {
+        ImGui::Image((ImTextureID) (intptr_t) _preview_tex, ImVec2(ARENA_DIM / 10.0f, ARENA_DIM / 10.0f));
+        ImGui::End();
+    }
+    ImGui::SetNextWindowBgAlpha(1.0f);
 
     if (_show_waypoints) {
         // plot waypoints in ImGui instead of OpenCV
