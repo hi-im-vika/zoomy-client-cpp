@@ -699,68 +699,34 @@ void CZoomyClient::imgui_draw_arena() {
         _arena_img = _arena_mask_img.clone();
         _mutex_mask_gen.unlock();
     } else if (_show_homography) {
-        cv::Mat starting_img = _arena_raw_img;
-        cv::Mat intermediate;
-        std::vector<cv::Point2f> end = {cv::Point2f(0, 0), cv::Point2f(ARENA_DIM, 0), cv::Point2f(ARENA_DIM, ARENA_DIM),
-                                        cv::Point2f(0, ARENA_DIM)};
-        cv::Mat arena_homography = cv::findHomography(_homography_corners, end);
-        cv::warpPerspective(starting_img, intermediate, arena_homography, cv::Size(ARENA_DIM, ARENA_DIM));
-        cv::Mat final = intermediate;
-        _arena_img = final;
+
     } else {
         _arena_img = _arena_raw_img.clone();
     }
 
-    float scaled_factor = 0.0f;
-    ImVec2 last_cursor_pos;
-    fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
-    float coord_scale = ARENA_DIM / scaled_factor;
-
-    // make vector of points for quad
-    std::vector<ImVec2> quad_points = {
-            ImVec2((float) _homography_corners.at(0).x, (float) _homography_corners.at(0).y),
-            ImVec2((float) _homography_corners.at(1).x, (float) _homography_corners.at(1).y),
-            ImVec2((float) _homography_corners.at(2).x, (float) _homography_corners.at(2).y),
-            ImVec2((float) _homography_corners.at(3).x, (float) _homography_corners.at(3).y),
-
-    };
+    fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
     // make quad coordinates absolute
-    std::vector<ImVec2> quad_points_scaled(4, ImVec2(0,0));
-    for (int i = 0; i < quad_points.size(); i++) {
-        quad_points_scaled.at(i) = ImVec2(
-                (quad_points.at(i).x / coord_scale) + last_cursor_pos.x,
-                (quad_points.at(i).y / coord_scale) + last_cursor_pos.y
-                );
-    }
+
 
     if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * coord_scale,
-                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * coord_scale);
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - _arena_last_cursor_pos.x) * _coord_scale,
+                                        (ImGui::GetMousePos().y - _arena_last_cursor_pos.y) * _coord_scale);
         _arena_mouse_pos.x =
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
 
         if (!_show_homography) {
-            // keep track of mouse distance to quad points
-            static std::vector<double> dist_to_quad_points(4,0.0f);
-            for (int i = 0; i < quad_points.size(); i++) {
-                dist_to_quad_points.at(i) = sqrt(pow((arena_mouse_pos.x - quad_points.at(i).x),2) + pow((arena_mouse_pos.y - quad_points.at(i).y),2));
-            }
-
-            // find closest quad point
-            auto it = std::min_element(std::begin(dist_to_quad_points), std::end(dist_to_quad_points));
-            int closest_point = (int) std::distance(std::begin(dist_to_quad_points),it);
 
             // print mouse location info
             ImGui::Text("(%d, %d)", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
             ImGui::Text("dp1, dp2, dp3, dp4: %.2f, %.2f, %.2f, %.2f",
-                        dist_to_quad_points.at(0),
-                        dist_to_quad_points.at(1),
-                        dist_to_quad_points.at(2),
-                        dist_to_quad_points.at(3));
-            ImGui::Text("Closest to: %d", closest_point + 1);
+                        _dist_quad_points.at(0),
+                        _dist_quad_points.at(1),
+                        _dist_quad_points.at(2),
+                        _dist_quad_points.at(3));
+            ImGui::Text("Closest to: %d", _closest_quad_point + 1);
 
             // implement drag to reshape quad without having to be directly over corner
             static bool dragging = false;
@@ -770,20 +736,20 @@ void CZoomyClient::imgui_draw_arena() {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
                 if (!dragging) {
                     dragging = true;
-                    point_that_matters = closest_point;
+                    point_that_matters = _closest_quad_point;
                     drag_start_pos = _arena_mouse_pos;
-                    last_qp_pos = quad_points.at(point_that_matters);
+                    last_qp_pos = _quad_points.at(point_that_matters);
                 }
-                quad_points.at(point_that_matters) = ImVec2(last_qp_pos.x + (_arena_mouse_pos.x - drag_start_pos.x),
+                _quad_points.at(point_that_matters) = ImVec2(last_qp_pos.x + (_arena_mouse_pos.x - drag_start_pos.x),
                                                             last_qp_pos.y + (_arena_mouse_pos.y - drag_start_pos.y));
             } else {
                 dragging = false;
             }
             _homography_corners = {
-                    cv::Point((int) quad_points.at(0).x,(int) quad_points.at(0).y),
-                    cv::Point((int) quad_points.at(1).x,(int) quad_points.at(1).y),
-                    cv::Point((int) quad_points.at(2).x,(int) quad_points.at(2).y),
-                    cv::Point((int) quad_points.at(3).x,(int) quad_points.at(3).y),
+                    cv::Point((int) _quad_points.at(0).x,(int) _quad_points.at(0).y),
+                    cv::Point((int) _quad_points.at(1).x,(int) _quad_points.at(1).y),
+                    cv::Point((int) _quad_points.at(2).x,(int) _quad_points.at(2).y),
+                    cv::Point((int) _quad_points.at(3).x,(int) _quad_points.at(3).y),
             };
         }
     }
