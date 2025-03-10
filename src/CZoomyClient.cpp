@@ -350,6 +350,7 @@ void CZoomyClient::draw() {
         }
     }
 
+    // memory leak somewhere after this point inside draw() loop
     // if viewport is minimized, don't draw
     if (SDL_GetWindowFlags(_window->get_native_window()) & SDL_WINDOW_MINIMIZED) return;
 
