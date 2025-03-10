@@ -696,7 +696,7 @@ void CZoomyClient::imgui_draw_arena() {
     // copy out latest arena image
     if (_show_mask) {
         _mutex_mask_gen.lock();
-        _arena_img = _arena_mask_img;
+        _arena_img = _arena_mask_img.clone();
         _mutex_mask_gen.unlock();
     } else if (_show_homography) {
         cv::Mat starting_img = _arena_raw_img;
@@ -708,7 +708,7 @@ void CZoomyClient::imgui_draw_arena() {
         cv::Mat final = intermediate;
         _arena_img = final;
     } else {
-        _arena_img = _arena_raw_img;
+        _arena_img = _arena_raw_img.clone();
     }
 
     float scaled_factor = 0.0f;
