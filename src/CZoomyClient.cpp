@@ -539,37 +539,41 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
-    // draw udp conn details table
-    ImGui::BeginDisabled(_tcp_req_ready);
-    ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
-    ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
-    ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
+    // if use remote camera
+    if (_cam_location) {
+        // draw tcp conn details table
+        ImGui::BeginDisabled(_tcp_req_ready);
+        ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+        ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
 
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Host:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_host_input", tcp_host, 64);
-    ImGui::PopItemWidth();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("TCP Host:");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::InputText("###tcp_host_input", tcp_host, 64);
+        ImGui::PopItemWidth();
 
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Port:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_port_input", tcp_port, 64);
-    ImGui::PopItemWidth();
-    ImGui::EndTable();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("TCP Port:");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::InputText("###tcp_port_input", tcp_port, 64);
+        ImGui::PopItemWidth();
+        ImGui::EndTable();
 
-    ImGui::PushItemWidth(-FLT_MIN);
-    if (ImGui::Button("Connect to TCP")) {
-        _tcp_host = tcp_host;
-        _tcp_port = tcp_port;
-        _tcp_req_ready = true;
+        ImGui::PushItemWidth(-FLT_MIN);
+        if (ImGui::Button("Connect to TCP")) {
+            _tcp_host = tcp_host;
+            _tcp_port = tcp_port;
+            _tcp_req_ready = true;
+        }
+        ImGui::PopItemWidth();
+        ImGui::EndDisabled();
     }
-    ImGui::PopItemWidth();
-    ImGui::EndDisabled();
+
     ImGui::EndGroup();
 
     // draw checkboxes for toggleable values
