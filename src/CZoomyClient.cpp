@@ -454,8 +454,8 @@ void CZoomyClient::draw() {
 }
 
 void CZoomyClient::imgui_draw_settings() {
-    // networking settings
     ImGui::Begin("Settings", nullptr);
+    // camera settings
     ImGui::SeparatorText("Camera");
     ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
     ImGui::RadioButton("Remote", &_cam_location, 1);
@@ -478,6 +478,8 @@ void CZoomyClient::imgui_draw_settings() {
         }
         ImGui::PopItemWidth();
     }
+
+    // control settings
     ImGui::SeparatorText("Controls");
     ImGui::Text("Choose gamepad:");
     int joysticks = SDL_NumJoysticks();
@@ -516,6 +518,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
+    // networking settings
     ImGui::SeparatorText("Networking");
 
     // placeholder values
