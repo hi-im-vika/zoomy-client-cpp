@@ -221,8 +221,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     glGenTextures(1, &_arena_tex);
     glGenTextures(1, &_preview_tex);
 
-//    // net init
-//    // TODO: thread network update separately from
+    // net init
+    // TODO: thread network update separately from
 
     _udp_req_ready = false;
     _tcp_req_ready = false;
