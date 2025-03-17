@@ -125,6 +125,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             &_hsv_threshold_high[2],
     };
 
+    _cam_location = 0; // 0 for local, 1 for remote
+
     _homography_corners = {
             cv::Point(100,100),
             cv::Point(200,100),
@@ -454,6 +456,9 @@ void CZoomyClient::draw() {
 void CZoomyClient::imgui_draw_settings() {
     // networking settings
     ImGui::Begin("Settings", nullptr);
+    ImGui::SeparatorText("Camera Selection");
+    ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
+    ImGui::RadioButton("Remote", &_cam_location, 1);
     ImGui::SeparatorText("Controls");
     ImGui::Text("Choose gamepad:");
     int joysticks = SDL_NumJoysticks();

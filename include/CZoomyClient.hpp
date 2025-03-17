@@ -57,6 +57,7 @@ private:
     std::mutex _mutex_dashcam, _mutex_arena, _mutex_mask_gen;
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
+    int _cam_location;
 
     // control
     CAutoController _autonomous;
