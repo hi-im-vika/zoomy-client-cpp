@@ -456,9 +456,28 @@ void CZoomyClient::draw() {
 void CZoomyClient::imgui_draw_settings() {
     // networking settings
     ImGui::Begin("Settings", nullptr);
-    ImGui::SeparatorText("Camera Selection");
+    ImGui::SeparatorText("Camera");
     ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
     ImGui::RadioButton("Remote", &_cam_location, 1);
+    if (!_cam_location) {
+
+        int item_selected_idx = 0;
+        std::string combo_preview_value = "Camera";
+
+        ImGui::PushItemWidth(-FLT_MIN);
+        if (ImGui::BeginCombo("##lcselect", combo_preview_value.c_str())) {
+            for (int i = 0; i < 3; i++) {
+                const bool is_selected = (item_selected_idx == i);
+                if (ImGui::Selectable("Camera 0", is_selected)) {
+                    item_selected_idx = i;
+                }
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+    }
     ImGui::SeparatorText("Controls");
     ImGui::Text("Choose gamepad:");
     int joysticks = SDL_NumJoysticks();
