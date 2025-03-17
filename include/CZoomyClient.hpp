@@ -58,6 +58,7 @@ private:
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
     int _cam_location;
+    bool _use_local;
 
     // control
     CAutoController _autonomous;
@@ -71,7 +72,9 @@ private:
 
     // opencv
     cv::VideoCapture _video_capture;
+    cv::VideoCapture _arena_capture;
     std::string _dashcam_gst_string;
+    std::string _arena_gst_string;
     bool _flip_image;
     bool _show_mask;
     bool _show_waypoints;

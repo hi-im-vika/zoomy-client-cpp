@@ -275,6 +275,56 @@ void CZoomyClient::update() {
     _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
     _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
 
+    if (!_cam_location) {
+        if (_use_local) {
+            // if video capture not set up, connect here
+            if (!_arena_capture.isOpened()) {
+                // for macOS ONLY
+                _arena_gst_string = "avfvideosrc device-index=1 ! appsink";
+                // attempt to connect to udp source, timeout at 1 second
+                _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
+            }
+
+            // if source still not opened (timeout reached), default source to videotestsrc
+            if (!_arena_capture.isOpened()) {
+                spdlog::warn("Could not open gstreamer pipeline. Defaulting to videotestsrc");
+                _arena_gst_string = "videotestsrc ! aspectratiocrop aspect-ratio=1 ! appsink";
+                _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
+            }
+
+            cv::Mat temp;
+            cv::Size temp_size;
+            _arena_capture.read(temp);
+            temp_size.height = temp.rows;
+            temp_size.width = temp.cols;
+
+            cv::Rect roi;
+            roi.x = (temp_size.width / 2) / 2;
+            roi.y = 0;
+            roi.width = temp_size.width - ((temp_size.width / 2) / 2);
+            roi.height = temp_size.height;
+            cv::Mat resized = cv::Mat::zeros(cv::Size(ARENA_DIM,ARENA_DIM),CV_8UC3);
+            cv::resize(temp(roi), resized, resized.size());
+//            _arena_capture.read(_arena_raw_img);
+            _arena_raw_img = resized.clone();
+
+//            if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
+//
+//            if (!_dashcam_raw_img.empty()) {
+//                _detector_params = cv::aruco::DetectorParameters();
+//                _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+//                _detector.setDetectorParameters(_detector_params);
+//                _detector.setDictionary(_dictionary);
+//                _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
+//            }
+//            if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
+//            _dashcam_img = _dashcam_raw_img;
+        } else {
+            _arena_capture.release();
+        }
+//        _arena_raw_img = _dashcam_img.clone();
+    }
+
     // calculate values for homography
     // make vector of points for quad
     _quad_points = {
@@ -463,7 +513,6 @@ void CZoomyClient::imgui_draw_settings() {
 
         int item_selected_idx = 0;
         std::string combo_preview_value = "Camera";
-
         ImGui::PushItemWidth(-FLT_MIN);
         if (ImGui::BeginCombo("##lcselect", combo_preview_value.c_str())) {
             for (int i = 0; i < 3; i++) {
@@ -476,6 +525,7 @@ void CZoomyClient::imgui_draw_settings() {
             }
             ImGui::EndCombo();
         }
+        ImGui::Checkbox("Use", &_use_local);
         ImGui::PopItemWidth();
     }
 
