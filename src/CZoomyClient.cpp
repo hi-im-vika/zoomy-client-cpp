@@ -1075,6 +1075,15 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
 }
 
+void CZoomyClient::mask_car(cv::Mat input_image) {
+    cv::cvtColor(input_image, _arena_mask_img, cv::COLOR_BGR2HSV);
+    cv::dilate(_arena_mask_img, _arena_mask_img, cv::Mat());
+    cv::inRange(_arena_mask_img, _hsv_threshold_low, _hsv_threshold_high, _arena_mask_img);
+    _arena_mask_img.convertTo(_arena_mask_img, CV_8UC1);
+
+    _autonomous.set_mask(_arena_mask_img);
+}
+
 // only call this from inside imgui window
 void CZoomyClient::fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale,
                                          ImVec2 &cursor_screen_pos_before_image) {
