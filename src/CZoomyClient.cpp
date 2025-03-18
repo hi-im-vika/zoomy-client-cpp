@@ -785,8 +785,6 @@ void CZoomyClient::imgui_draw_arena() {
         _arena_img = _arena_raw_img.clone();
     }
 
-    mask_car(_arena_raw_img);
-
     fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
     // make quad coordinates absolute
@@ -1075,15 +1073,6 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
-}
-
-void CZoomyClient::mask_car(cv::Mat input_image) {
-    cv::cvtColor(input_image, _arena_mask_img, cv::COLOR_BGR2HSV);
-    cv::dilate(_arena_mask_img, _arena_mask_img, cv::Mat());
-    cv::inRange(_arena_mask_img, _hsv_threshold_low, _hsv_threshold_high, _arena_mask_img);
-    _arena_mask_img.convertTo(_arena_mask_img, CV_8UC1);
-
-    _autonomous.set_mask(_arena_mask_img);
 }
 
 // only call this from inside imgui window

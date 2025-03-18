@@ -16,8 +16,6 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
-    _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
-    _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
     return true;
 }
 
@@ -119,22 +117,6 @@ int CAutoController::getAutoInput(int type) {
 
 bool CAutoController::isRunning() {
     return !_threadExit[1];
-}
-
-cv::Scalar_<int> CAutoController::get_hsv_threshold_low() {
-    return _hsv_threshold_low;
-}
-
-cv::Scalar_<int> CAutoController::get_hsv_threshold_high() {
-    return _hsv_threshold_high;
-}
-
-void CAutoController::set_hsv_threshold_low(cv::Scalar_<int> &hsv_low) {
-    _hsv_threshold_low = hsv_low;
-}
-
-void CAutoController::set_hsv_threshold_high(cv::Scalar_<int> &hsv_high) {
-    _hsv_threshold_high = hsv_high;
 }
 
 void CAutoController::set_mask(cv::Mat arena_mask) {

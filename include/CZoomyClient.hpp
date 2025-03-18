@@ -132,8 +132,6 @@ private:
     void imgui_draw_arena();
     void imgui_draw_debug();
 
-    void mask_car(cv::Mat input_image);
-
     static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture);
     static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale, ImVec2 &cursor_screen_pos_before_image);
 
