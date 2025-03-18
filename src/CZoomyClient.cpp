@@ -9,7 +9,7 @@
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
 #define DEADZONE 2048
-#define ARENA_DIM 600
+#define ARENA_DIM 1440
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 30
@@ -306,7 +306,7 @@ void CZoomyClient::update() {
             cv::Mat resized = cv::Mat::zeros(cv::Size(ARENA_DIM,ARENA_DIM),CV_8UC3);
             cv::resize(temp(roi), resized, resized.size());
 //            _arena_capture.read(_arena_raw_img);
-            _arena_raw_img = resized.clone();
+            _arena_raw_img = temp(roi).clone();
 
 //            if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
 //
