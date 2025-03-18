@@ -785,6 +785,8 @@ void CZoomyClient::imgui_draw_arena() {
         _arena_img = _arena_raw_img.clone();
     }
 
+    mask_car(_arena_raw_img);
+
     fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
     // make quad coordinates absolute
