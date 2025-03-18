@@ -10,7 +10,7 @@
 
 class CAutoController {
 private:
-    cv::Mat *_carImg, *_overheadImg, _above, _masked_img;
+    cv::Mat *_carImg, *_overheadImg, _masked_img;
 
     std::vector<int> _autoInput;
 
@@ -59,12 +59,11 @@ public:
     int getAutoInput(int type);
     bool isRunning();
 
-    cv::Mat get_masked_image();
-
-
     cv::Scalar_<int> get_hsv_threshold_low();
     cv::Scalar_<int> get_hsv_threshold_high();
 
     void set_hsv_threshold_low(cv::Scalar_<int> &hsv_low);
     void set_hsv_threshold_high(cv::Scalar_<int> &hsv_high);
+
+    void set_mask(cv::Mat arena_mask);
 };

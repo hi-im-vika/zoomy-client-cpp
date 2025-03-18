@@ -16,7 +16,6 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
-    _masked_img = cv::Mat::ones(cv::Size(600,600), CV_8UC3);
     _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
     _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
     return true;
@@ -61,15 +60,7 @@ void CAutoController::runToPoint() {
         std::vector<std::vector<cv::Point>> contours;
         std::vector<cv::Point> contour;
 
-        _imgLock.lock();
-        cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
-        cv::dilate(_above, _above, cv::Mat());
-        cv::inRange(_above, _hsv_threshold_low, _hsv_threshold_high, _above);
-        _above.convertTo(_above, CV_8UC1);
-        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-        _imgLock.unlock();
-
-        _masked_img = _above;
+        cv::findContours(_masked_img, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         int biggest = 0;
         cv::Rect car;
@@ -130,10 +121,6 @@ bool CAutoController::isRunning() {
     return !_threadExit[1];
 }
 
-cv::Mat CAutoController::get_masked_image() {
-    return _masked_img;
-}
-
 cv::Scalar_<int> CAutoController::get_hsv_threshold_low() {
     return _hsv_threshold_low;
 }
@@ -148,4 +135,8 @@ void CAutoController::set_hsv_threshold_low(cv::Scalar_<int> &hsv_low) {
 
 void CAutoController::set_hsv_threshold_high(cv::Scalar_<int> &hsv_high) {
     _hsv_threshold_high = hsv_high;
+}
+
+void CAutoController::set_mask(cv::Mat arena_mask) {
+    _masked_img = arena_mask;
 }
