@@ -362,7 +362,7 @@ void CZoomyClient::update() {
     _arena_warped_img = image_to_warp.clone();
 
     if (_show_mask) {
-        cv::Mat pregen = _arena_raw_img.clone();
+        cv::Mat pregen = _show_homography ? _arena_warped_img.clone() : _arena_raw_img.clone();
         cv::Mat hsv, inrange, mask, anded;
 
         cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
