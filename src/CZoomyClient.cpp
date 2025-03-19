@@ -375,15 +375,31 @@ void CZoomyClient::update() {
     _autonomous.set_mask(mask);
     if (_show_mask) _arena_mask_img = anded.clone();
 
-    if (_values.at(value_type::GC_Y)) {
-        _auto = true;
-        _step = 0;
-    }
-    if (_values.at(value_type::GC_B)) {
-        _auto = false;
-        _values.at(value_type::GC_A) = 0;
-        _autonomous.endAutoTarget();
-        _autonomous.endRunToPoint();
+//    if (_values.at(value_type::GC_Y)) {
+//        _auto = true;
+//        _step = 0;
+//    }
+//    if (_values.at(value_type::GC_B)) {
+//        _auto = false;
+//        _values.at(value_type::GC_A) = 0;
+//        _autonomous.endAutoTarget();
+//        _autonomous.endRunToPoint();
+//    }
+
+    if (_use_auto) {
+        // only enable auto if not already disabled
+        if (!_auto) {
+            _auto = true;
+            _step = 0;
+        }
+    } else {
+        // only disable auto if already enabled
+        if (_auto) {
+            _auto = false;
+            _values.at(value_type::GC_A) = 0;
+            _autonomous.endAutoTarget();
+            _autonomous.endRunToPoint();
+        }
     }
 
     if (!_autonomous.isRunning() && _auto) {
@@ -652,6 +668,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
+    ImGui::Checkbox("Autonomous mode", &_use_auto);
     ImGui::EndGroup();
 
     // TODO: determine maximum number of values to send and remove stringstream
@@ -784,8 +801,6 @@ void CZoomyClient::imgui_draw_arena() {
     } else {
         _arena_img = _arena_raw_img.clone();
     }
-
-    mask_car(_arena_raw_img);
 
     fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
@@ -1075,15 +1090,6 @@ void CZoomyClient::mat_to_tex(cv::Mat &input, GLuint &output) {
 
     glBindTexture(GL_TEXTURE_2D, output);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, input.cols, input.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped.data);
-}
-
-void CZoomyClient::mask_car(cv::Mat input_image) {
-    cv::cvtColor(input_image, _arena_mask_img, cv::COLOR_BGR2HSV);
-    cv::dilate(_arena_mask_img, _arena_mask_img, cv::Mat());
-    cv::inRange(_arena_mask_img, _hsv_threshold_low, _hsv_threshold_high, _arena_mask_img);
-    _arena_mask_img.convertTo(_arena_mask_img, CV_8UC1);
-
-    _autonomous.set_mask(_arena_mask_img);
 }
 
 // only call this from inside imgui window
