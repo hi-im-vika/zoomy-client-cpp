@@ -272,10 +272,6 @@ CZoomyClient::~CZoomyClient() {
     _json_data["settings"]["opencv"]["sat"] = {_hsv_threshold_low[1], _hsv_threshold_high[1]};
     _json_data["settings"]["opencv"]["val"] = {_hsv_threshold_low[2], _hsv_threshold_high[2]};
 
-    spdlog::info("{:d} {:d}", _hsv_threshold_low[0], _hsv_threshold_high[0]);
-    spdlog::info("{:d} {:d}", _hsv_threshold_low[1], _hsv_threshold_high[1]);
-    spdlog::info("{:d} {:d}", _hsv_threshold_low[2], _hsv_threshold_high[2]);
-
     std::ofstream o("settings.json");
     o << std::setw(4) << _json_data << std::endl;
     o.close();
