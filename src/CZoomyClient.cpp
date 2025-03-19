@@ -392,6 +392,11 @@ void CZoomyClient::update() {
         }
     }
 
+    if (_auto) {
+        _last_car_pos.x = _autonomous.get_car().x;
+        _last_car_pos.y = _autonomous.get_car().y;
+    }
+
     if (!_autonomous.isRunning() && _auto) {
         switch (_step) {
             case 0:
@@ -905,6 +910,13 @@ void CZoomyClient::imgui_draw_arena() {
             }
             wp++;
         }
+    }
+
+    if (_auto) {
+        ImVec2 pt_ctr = ImVec2(((float) _last_car_pos.x / _coord_scale) + _arena_last_cursor_pos.x,
+                               ((float) _last_car_pos.y / _coord_scale) + _arena_last_cursor_pos.y);
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
+                ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
     }
 
     ImGui::End();

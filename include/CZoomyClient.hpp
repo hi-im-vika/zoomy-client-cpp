@@ -100,6 +100,7 @@ private:
     float _arena_scale_factor;
     float _coord_scale;
     ImVec2 _arena_last_cursor_pos;
+    ImVec2 _last_car_pos;
     cv::Mat _arena_warped_img;
 
     // net (udp)
