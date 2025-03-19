@@ -151,6 +151,11 @@ private:
 
     static void mat_to_tex(cv::Mat &input, GLuint &output);
 
+    std::chrono::steady_clock::time_point _deltaTime;
+    float _angle;
+    bool _demo;
+    int _autospeed;
+
     void udp_rx();
     void udp_tx();
 

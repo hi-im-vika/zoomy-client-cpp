@@ -8,8 +8,10 @@
 
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
-#define DEADZONE 2048
+#define DEADZONE 4096
 #define ARENA_DIM 1440
+#define DEMO_SPEED 0.3
+#define DEMO_ROTATE 0.7
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 30
@@ -17,6 +19,10 @@
 
 CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
+    _angle = 0;
+    _deltaTime = std::chrono::steady_clock::now();
+    _demo = true;
+    _autospeed = 164;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
@@ -117,6 +123,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             "Saturation (upper)",
             "Value (lower)",
             "Value (upper)",
+            "Autonomy  speed",
     };
     _pointer_hsv_thresholds = {
             &_hsv_threshold_low[0],
@@ -125,6 +132,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             &_hsv_threshold_high[1],
             &_hsv_threshold_low[2],
             &_hsv_threshold_high[2],
+            &_autospeed
     };
 
     _cam_location = 0; // 0 for local, 1 for remote
@@ -405,7 +413,7 @@ void CZoomyClient::update() {
     if (_show_mask) _arena_mask_img = anded.clone();
 
     // handle controller events for auto control
-    if (_values.at(value_type::GC_Y)) _use_auto = true;
+    if (_values.at(value_type::GC_Y) && !_demo) _use_auto = true;
     if (_values.at(value_type::GC_B)) _use_auto = false;
 
     // handle gui events for auto control
@@ -453,7 +461,8 @@ void CZoomyClient::update() {
 }
 
 void CZoomyClient::draw() {
-
+    float delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count() / 18.0;
+    _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
         ImGui_ImplSDL2_ProcessEvent(&_evt);
@@ -482,8 +491,14 @@ void CZoomyClient::draw() {
                 _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
 
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
-                    _values.at(value_type::GC_LEFTX) = _joystick[0].x;
-                    _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    if (_demo) {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x * DEMO_SPEED;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y * DEMO_SPEED;
+                    }
+                    else {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    }
                 } else if (_auto) {
                     _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
                     _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
@@ -492,7 +507,18 @@ void CZoomyClient::draw() {
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
 
+                if (_angle > 360.0)
+                    _angle -= 360.0;
+                else if (_angle < 0.0)
+                    _angle += 360.0;
+
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
+                    // look away this won't be pretty...
+                    if (_demo)
+                        _angle += DEMO_ROTATE * delta * _joystick[1].x / 32768.0;
+                    else
+                        _angle += delta * _joystick[1].x / 32768.0;
+                    // nevermind, doesn't look that bad
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
                 } else if (_auto) {
@@ -507,6 +533,9 @@ void CZoomyClient::draw() {
                 }
 
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+                if (!_auto) {
+                    _values.at(value_type::GC_LTRIG) = _angle;
+                }
                 break;
             default:
                 break;
@@ -693,6 +722,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
     ImGui::Checkbox("Relative Motion", &_relation);
     ImGui::Checkbox("Autonomous mode", &_use_auto);
+    ImGui::Checkbox("Demo mode", &_demo);
     ImGui::EndGroup();
 
     // TODO: determine maximum number of values to send and remove stringstream
