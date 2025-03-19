@@ -54,10 +54,11 @@ void CAutoController::autoTarget() {
 
 void CAutoController::runToPoint() {
     if (!_overheadImg->empty()) {
+        cv::Mat working_copy = _overheadImg->clone();
         std::vector<cv::Vec4i> hierarchy;
         std::vector<std::vector<cv::Point>> contours;
 
-        cv::findContours(_masked_img, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        cv::findContours(working_copy, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         int biggest = 0;
         cv::Rect car;
