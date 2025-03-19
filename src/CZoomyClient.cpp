@@ -139,7 +139,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _dist_quad_points = std::vector<double>(4);
 
     // control init
-    if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
+    // pass dashcam and masked arena image to autonomous
+    if (!_autonomous.init(&_dashcam_img, &_arena_mask_img)) {
         spdlog::error("Error during CAutoController init.");
         exit(-1);
     }
