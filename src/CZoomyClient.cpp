@@ -320,7 +320,7 @@ void CZoomyClient::update() {
             ImVec2((float) _homography_corners.at(3).x, (float) _homography_corners.at(3).y)
     };
 
-    // get scale between real arena image and imgui displayed image
+    // get scale between real arena image and imgui texture dimensions
     _coord_scale = ARENA_DIM / _arena_scale_factor;
 
     // keep track of mouse distance to quad points
@@ -793,11 +793,11 @@ void CZoomyClient::imgui_draw_arena() {
         _arena_img = _arena_raw_img.clone();
     }
 
+    // fit arena texture to window size
     fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
-    // make quad coordinates absolute
-
     if (ImGui::IsItemHovered()) {
+        // get position of cursor relative to actual image size
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - _arena_last_cursor_pos.x) * _coord_scale,
                                         (ImGui::GetMousePos().y - _arena_last_cursor_pos.y) * _coord_scale);
         _arena_mouse_pos.x =
@@ -805,8 +805,8 @@ void CZoomyClient::imgui_draw_arena() {
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
 
+        // only configure homography when unchecked
         if (!_show_homography) {
-
             // implement drag to reshape quad without having to be directly over corner
             static bool dragging = false;
             static ImVec2 drag_start_pos(0,0);
@@ -824,6 +824,8 @@ void CZoomyClient::imgui_draw_arena() {
             } else {
                 dragging = false;
             }
+
+            // convert imgui quad coords to opencv coords for imgproc
             _homography_corners = {
                     cv::Point((int) _quad_points.at(0).x,(int) _quad_points.at(0).y),
                     cv::Point((int) _quad_points.at(1).x,(int) _quad_points.at(1).y),
@@ -906,12 +908,14 @@ void CZoomyClient::imgui_draw_arena() {
         }
     }
 
-    // show car point in imgui
+    // show auto points in imgui
     if (_auto) {
+        // show car position
         ImVec2 pt_ctr = ImVec2(((float) _last_car_pos.x / _coord_scale) + _arena_last_cursor_pos.x,
                                ((float) _last_car_pos.y / _coord_scale) + _arena_last_cursor_pos.y);
         ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
                 ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
+        // show next point
         pt_ctr = ImVec2(((float) _autonomous.get_destination().x / _coord_scale) + _arena_last_cursor_pos.x,
                         ((float) _autonomous.get_destination().y / _coord_scale) + _arena_last_cursor_pos.y);
         ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
