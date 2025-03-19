@@ -17,6 +17,7 @@ private:
     std::vector<bool> _threadExit;
 
     cv::Point _destination;
+    cv::Point _location;
     int _target;
     int _speed;
     std::mutex _imgLock;
@@ -57,11 +58,7 @@ public:
     int getAutoInput(int type);
     bool isRunning();
 
-    cv::Scalar_<int> get_hsv_threshold_low();
-    cv::Scalar_<int> get_hsv_threshold_high();
-
-    void set_hsv_threshold_low(cv::Scalar_<int> &hsv_low);
-    void set_hsv_threshold_high(cv::Scalar_<int> &hsv_high);
+    cv::Point get_car();
 
     void set_mask(cv::Mat arena_mask);
 };

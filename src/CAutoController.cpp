@@ -74,6 +74,7 @@ void CAutoController::runToPoint() {
 
         _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
         _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
+        _location = cv::Point(car.x + car.width / 2, car.y + car.height / 2);
 
         std::cout << cv::Point((car.x + car.width / 2), (car.y + car.height / 2)) << std::endl;
         cv::circle(*_overheadImg, cv::Point((car.x + car.width / 2), (car.y + car.height / 2)), _overheadImg->cols / 60,
@@ -117,6 +118,10 @@ int CAutoController::getAutoInput(int type) {
 
 bool CAutoController::isRunning() {
     return !_threadExit[1];
+}
+
+cv::Point CAutoController::get_car() {
+    return _location;
 }
 
 void CAutoController::set_mask(cv::Mat arena_mask) {
