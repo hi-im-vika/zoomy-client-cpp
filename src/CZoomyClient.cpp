@@ -292,33 +292,20 @@ void CZoomyClient::update() {
                 _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
             }
 
+            // crop incoming arena image so it is 1:1 aspect ratio
             cv::Mat temp;
             cv::Size temp_size;
+            cv::Rect roi;
             _arena_capture.read(temp);
             temp_size.height = temp.rows;
             temp_size.width = temp.cols;
-
-            cv::Rect roi;
             roi.x = (temp_size.width / 2) / 2;
             roi.y = 0;
             roi.width = temp_size.width - ((temp_size.width / 2) / 2);
             roi.height = temp_size.height;
-            cv::Mat resized = cv::Mat::zeros(cv::Size(ARENA_DIM,ARENA_DIM),CV_8UC3);
-            cv::resize(temp(roi), resized, resized.size());
-//            _arena_capture.read(_arena_raw_img);
-            _arena_raw_img = temp(roi).clone();
 
+            _arena_raw_img = temp(roi).clone();
 //            if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
-//
-//            if (!_dashcam_raw_img.empty()) {
-//                _detector_params = cv::aruco::DetectorParameters();
-//                _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-//                _detector.setDetectorParameters(_detector_params);
-//                _detector.setDictionary(_dictionary);
-//                _detector.detectMarkers(_dashcam_raw_img, _marker_corners, _marker_ids, _rejected_candidates);
-//            }
-//            if (!_dashcam_raw_img.empty()) cv::aruco::drawDetectedMarkers(_dashcam_raw_img, _marker_corners, _marker_ids);
-//            _dashcam_img = _dashcam_raw_img;
         } else {
             _arena_capture.release();
         }
