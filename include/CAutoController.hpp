@@ -17,6 +17,7 @@ private:
     std::vector<bool> _threadExit;
 
     cv::Point _destination;
+    cv::Point _location;
     int _target;
     int _speed;
     std::mutex _imgLock;
@@ -31,8 +32,6 @@ private:
     cv::aruco::DetectorParameters _detector_params;
     cv::aruco::Dictionary _dictionary;
     cv::aruco::ArucoDetector _detector;
-
-    cv::Scalar _hsv_threshold_low, _hsv_threshold_high;
 
 public:
     enum controlType {
@@ -59,11 +58,7 @@ public:
     int getAutoInput(int type);
     bool isRunning();
 
-    cv::Scalar_<int> get_hsv_threshold_low();
-    cv::Scalar_<int> get_hsv_threshold_high();
-
-    void set_hsv_threshold_low(cv::Scalar_<int> &hsv_low);
-    void set_hsv_threshold_high(cv::Scalar_<int> &hsv_high);
+    cv::Point get_car();
 
     void set_mask(cv::Mat arena_mask);
 };

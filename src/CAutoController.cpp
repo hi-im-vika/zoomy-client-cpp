@@ -16,8 +16,6 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
-    _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
-    _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
     return true;
 }
 
@@ -76,6 +74,7 @@ void CAutoController::runToPoint() {
 
         _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
         _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
+        _location = cv::Point(car.x + car.width / 2, car.y + car.height / 2);
 
         std::cout << cv::Point((car.x + car.width / 2), (car.y + car.height / 2)) << std::endl;
         cv::circle(*_overheadImg, cv::Point((car.x + car.width / 2), (car.y + car.height / 2)), _overheadImg->cols / 60,
@@ -121,20 +120,8 @@ bool CAutoController::isRunning() {
     return !_threadExit[1];
 }
 
-cv::Scalar_<int> CAutoController::get_hsv_threshold_low() {
-    return _hsv_threshold_low;
-}
-
-cv::Scalar_<int> CAutoController::get_hsv_threshold_high() {
-    return _hsv_threshold_high;
-}
-
-void CAutoController::set_hsv_threshold_low(cv::Scalar_<int> &hsv_low) {
-    _hsv_threshold_low = hsv_low;
-}
-
-void CAutoController::set_hsv_threshold_high(cv::Scalar_<int> &hsv_high) {
-    _hsv_threshold_high = hsv_high;
+cv::Point CAutoController::get_car() {
+    return _location;
 }
 
 void CAutoController::set_mask(cv::Mat arena_mask) {
