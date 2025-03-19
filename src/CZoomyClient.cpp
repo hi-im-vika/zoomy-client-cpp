@@ -796,7 +796,6 @@ void CZoomyClient::imgui_draw_arena() {
 
     // make quad coordinates absolute
 
-
     if (ImGui::IsItemHovered()) {
         ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - _arena_last_cursor_pos.x) * _coord_scale,
                                         (ImGui::GetMousePos().y - _arena_last_cursor_pos.y) * _coord_scale);
@@ -863,7 +862,7 @@ void CZoomyClient::imgui_draw_arena() {
         cv::Mat copied = _arena_warped_img.clone();
         mat_to_tex(copied, _preview_tex);
         copied.release();
-        if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags)) {
+        if (ImGui::Begin("Homography preview", nullptr, window_flags)) {
             ImGui::Image((ImTextureID) (intptr_t) _preview_tex, ImVec2(ARENA_DIM / 10.0f, ARENA_DIM / 10.0f));
             ImGui::End();
         }
