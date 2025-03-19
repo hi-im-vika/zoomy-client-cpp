@@ -859,6 +859,11 @@ void CZoomyClient::imgui_draw_arena() {
                 3
         );
 
+// add circles for clarity
+//        for (auto &i : _quad_points_scaled) {
+//            ImGui::GetWindowDrawList()->AddCircleFilled(i, 5, ImColor(ImVec4(0.0f,1.0f,0.0f,1.0f)));
+//        }
+
         if (!_auto) {
             // minimap for homography preview
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
