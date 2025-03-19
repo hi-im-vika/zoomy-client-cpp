@@ -124,7 +124,3 @@ cv::Point CAutoController::get_car() {
 cv::Point CAutoController::get_destination() {
     return _destination;
 }
-
-void CAutoController::set_mask(cv::Mat arena_mask) {
-    _masked_img = arena_mask;
-}
