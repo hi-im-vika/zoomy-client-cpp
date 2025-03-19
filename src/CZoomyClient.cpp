@@ -931,7 +931,6 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
                 ImVec4(0.0f, 0.0f, 1.0f, 1.0f)));
     }
-
     ImGui::End();
 }
 
