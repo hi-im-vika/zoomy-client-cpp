@@ -272,9 +272,6 @@ void CZoomyClient::update() {
         _video_capture.release();
     }
 
-    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
-    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
-
     if (!_cam_location) {
         if (_use_local) {
             // if video capture not set up, connect here
@@ -365,10 +362,7 @@ void CZoomyClient::update() {
     cv::Mat hsv, inrange, mask, anded;
 
     cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
-    cv::inRange(hsv,
-                (cv::Scalar) _autonomous.get_hsv_threshold_low(),
-                (cv::Scalar) _autonomous.get_hsv_threshold_high(),
-                inrange);
+    cv::inRange(hsv, (cv::Scalar) _hsv_threshold_low, s(cv::Scalar) _hsv_threshold_high ,inrange);
     inrange.convertTo(mask, CV_8UC1);
     cv::bitwise_and(pregen, pregen, anded, mask);
 
