@@ -361,19 +361,19 @@ void CZoomyClient::update() {
     cv::warpPerspective(image_to_warp, image_to_warp, arena_homography, cv::Size(ARENA_DIM, ARENA_DIM));
     _arena_warped_img = image_to_warp.clone();
 
-    if (_show_mask) {
-        cv::Mat pregen = _show_homography ? _arena_warped_img.clone() : _arena_raw_img.clone();
-        cv::Mat hsv, inrange, mask, anded;
+    cv::Mat pregen = _show_homography ? _arena_warped_img.clone() : _arena_raw_img.clone();
+    cv::Mat hsv, inrange, mask, anded;
 
-        cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
-        cv::inRange(hsv,
-                    (cv::Scalar) _autonomous.get_hsv_threshold_low(),
-                    (cv::Scalar) _autonomous.get_hsv_threshold_high(),
-                    inrange);
-        inrange.convertTo(mask, CV_8UC1);
-        cv::bitwise_and(pregen, pregen, anded, mask);
-        _arena_mask_img = anded.clone();
-    }
+    cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
+    cv::inRange(hsv,
+                (cv::Scalar) _autonomous.get_hsv_threshold_low(),
+                (cv::Scalar) _autonomous.get_hsv_threshold_high(),
+                inrange);
+    inrange.convertTo(mask, CV_8UC1);
+    cv::bitwise_and(pregen, pregen, anded, mask);
+
+    _autonomous.set_mask(mask);
+    if (_show_mask) _arena_mask_img = anded.clone();
 
     if (_values.at(value_type::GC_Y)) {
         _auto = true;
