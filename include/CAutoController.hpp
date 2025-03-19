@@ -59,6 +59,7 @@ public:
     bool isRunning();
 
     cv::Point get_car();
+    cv::Point get_destination();
 
     void set_mask(cv::Mat arena_mask);
 };
