@@ -7,13 +7,17 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cmath>
+
+#include <nlohmann/json.hpp>
 #include <imgui.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <spdlog/spdlog.h>
 #include <SDL.h>
-#include <sstream>
-#include <math.h>
+
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL_opengles2.h>
 #else
@@ -58,10 +62,16 @@ private:
     std::mutex _mutex_dashcam, _mutex_arena, _mutex_mask_gen;
     ImVec2 _arena_mouse_pos;
     int _wp_highlighted;
+    char _host_udp[64];
+    char _port_udp[64];
+    char _host_tcp[64];
+    char _port_tcp[64];
     int _cam_location;
     bool _use_local;
 
     // control
+    std::ifstream _json_file;
+    nlohmann::json _json_data;
     CAutoController _autonomous;
     unsigned int _step;
     std::vector<int> _values;

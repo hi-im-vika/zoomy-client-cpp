@@ -151,74 +151,90 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
 
-    // set default hsv thresholds
-    _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
-    _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
+    // waypoints
+    // check if json exists, load if so, create if not
+    std::ifstream i("waypoints.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"waypoints", {
+                {{"coords", {0,0}},     {"speed", 0},       {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {96,369}},  {"speed", 14000},   {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {245,450}}, {"speed", 14000},   {"rotation", 342},  {"enable_turret", false}},
+                {{"coords", {136,262}}, {"speed", 15000},   {"rotation", 90},   {"enable_turret", false}},
+                {{"coords", {137,130}}, {"speed", 14000},   {"rotation", 70},   {"enable_turret", false}},
+                {{"coords", {327,115}}, {"speed", 14000},   {"rotation", 210},  {"enable_turret", false}},
+                {{"coords", {511,147}}, {"speed", 14000},   {"rotation", 180},  {"enable_turret", false}},
+                {{"coords", {458,334}}, {"speed", 15000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {578,421}}, {"speed", 14000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {572,535}}, {"speed", 20000},   {"rotation", 270},  {"enable_turret", false}},
+        }}};
 
-    // smaller rot value = ccw, larger rot value = cw
-    _waypoints = {
-            CAutoController::waypoint{     // WAYPOINT 0
-                    cv::Point(0, 0),
-                    0,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 1
-                    cv::Point(96, 369),
-                    14000,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
-                    cv::Point(245, 450),
-                    14000,
-                    342,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 3
-                    cv::Point(136, 262),
-                    15000,
-                    90,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 4
-                    cv::Point(137, 130),
-                    14000,
-                    70,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 5
-                    cv::Point(327, 115),
-                    14000,
-                    210,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 6
-                    cv::Point(511, 147),
-                    14000,
-                    180,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 7
-//                cv::Point(515, 350),
-                    cv::Point(458, 334),
-                    15000,
-                    270,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 8
-                    cv::Point(578, 421),
-                    14000,
-                    270,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 9
-                    cv::Point(572, 535),
-                    20000,
-                    270,
-                    false
-            },
-    };
+        std::ofstream o("waypoints.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("waypoints.json");
+    }
+
+    i >> _json_data;
+    for (auto it : _json_data["waypoints"]) {
+        _waypoints.push_back(CAutoController::waypoint{
+            cv::Point((int) it["coords"][0], (int) it["coords"][1]),
+            (int) it["speed"],
+            (int) it["rotation"],
+            (bool) it["enable_turret"]});
+    }
+    i.close();
+
+    // settings
+    i = std::ifstream("settings.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"settings", {
+                        {"networking", {
+                                {"udp", {
+                                        {"host", "192.168.1.104"},
+                                        {"port", "46188"}}
+                                        },
+                                {"tcp", {
+                                         {"host", "192.168.1.156"},
+                                         {"port", "4006"}
+                                 }}
+                        }},
+                        {"opencv", {
+                                {"hue", {8, 18}},
+                                {"sat", {122,255}},
+                                {"val", {141,255}}
+                        }},
+                }}};
+        std::ofstream o("settings.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("settings.json");
+    }
+
+    _json_data.clear();
+    i >> _json_data;
+    i.close();
+
+    snprintf(_host_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["host"]).c_str());
+    snprintf(_port_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["port"]).c_str());
+    snprintf(_host_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["host"]).c_str());
+    snprintf(_port_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["port"]).c_str());
+
+    _hsv_threshold_low = {_json_data["settings"]["opencv"]["hue"][0],
+                          _json_data["settings"]["opencv"]["sat"][0],
+                          _json_data["settings"]["opencv"]["val"][0]};
+
+    _hsv_threshold_high = {_json_data["settings"]["opencv"]["hue"][1],
+                           _json_data["settings"]["opencv"]["sat"][1],
+                           _json_data["settings"]["opencv"]["val"][1]};
+
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
@@ -240,7 +256,31 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _thread_update_tcp.detach();
 }
 
-CZoomyClient::~CZoomyClient() = default;
+CZoomyClient::~CZoomyClient() {
+    spdlog::info("Saving config...");
+
+    std::ifstream i("settings.json");
+    _json_data.clear();
+    i >> _json_data;
+    i.close();
+    _json_data["settings"]["networking"]["udp"]["host"] = _host_udp;
+    _json_data["settings"]["networking"]["udp"]["port"] = _port_udp;
+    _json_data["settings"]["networking"]["tcp"]["host"] = _host_tcp;
+    _json_data["settings"]["networking"]["tcp"]["port"] = _port_tcp;
+
+    _json_data["settings"]["opencv"]["hue"] = {_hsv_threshold_low[0], _hsv_threshold_high[0]};
+    _json_data["settings"]["opencv"]["sat"] = {_hsv_threshold_low[1], _hsv_threshold_high[1]};
+    _json_data["settings"]["opencv"]["val"] = {_hsv_threshold_low[2], _hsv_threshold_high[2]};
+
+    spdlog::info("{:d} {:d}", _hsv_threshold_low[0], _hsv_threshold_high[0]);
+    spdlog::info("{:d} {:d}", _hsv_threshold_low[1], _hsv_threshold_high[1]);
+    spdlog::info("{:d} {:d}", _hsv_threshold_low[2], _hsv_threshold_high[2]);
+
+    std::ofstream o("settings.json");
+    o << std::setw(4) << _json_data << std::endl;
+    o.close();
+    spdlog::info("Done");
+}
 
 void CZoomyClient::update() {
 
@@ -568,12 +608,6 @@ void CZoomyClient::imgui_draw_settings() {
     // networking settings
     ImGui::SeparatorText("Networking");
 
-    // placeholder values
-    static char udp_host[64] = "192.168.1.104";
-    static char udp_port[64] = "46188";
-    static char tcp_host[64] = "127.0.0.1";
-    static char tcp_port[64] = "4006";
-
     ImGui::BeginGroup();
 
     // draw udp conn details table
@@ -587,7 +621,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Host:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::InputText("###udp_host_input", _host_udp, 64);
     ImGui::PopItemWidth();
 
     ImGui::TableNextRow();
@@ -595,14 +629,14 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Port:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::InputText("###udp_port_input", _port_udp, 64);
     ImGui::PopItemWidth();
     ImGui::EndTable();
 
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
-        _udp_host = udp_host;
-        _udp_port = udp_port;
+        _udp_host = _host_udp;
+        _udp_port = _port_udp;
         _udp_req_ready = true;
     }
     ImGui::PopItemWidth();
@@ -623,6 +657,13 @@ void CZoomyClient::imgui_draw_settings() {
         ImGui::PushItemWidth(-FLT_MIN);
         ImGui::InputText("###tcp_host_input", tcp_host, 64);
         ImGui::PopItemWidth();
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("TCP Host:");
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
+    ImGui::InputText("###tcp_host_input", _host_tcp, 64);
+    ImGui::PopItemWidth();
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -632,6 +673,14 @@ void CZoomyClient::imgui_draw_settings() {
         ImGui::InputText("###tcp_port_input", tcp_port, 64);
         ImGui::PopItemWidth();
         ImGui::EndTable();
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("TCP Port:");
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-FLT_MIN);
+    ImGui::InputText("###tcp_port_input", _port_tcp, 64);
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
 
         ImGui::PushItemWidth(-FLT_MIN);
         if (ImGui::Button("Connect to TCP")) {
@@ -643,6 +692,14 @@ void CZoomyClient::imgui_draw_settings() {
         ImGui::EndDisabled();
     }
 
+    ImGui::PushItemWidth(-FLT_MIN);
+    if (ImGui::Button("Connect to TCP")) {
+        _tcp_host = _host_tcp;
+        _tcp_port = _port_tcp;
+        _tcp_req_ready = true;
+    }
+    ImGui::PopItemWidth();
+    ImGui::EndDisabled();
     ImGui::EndGroup();
 
     // draw checkboxes for toggleable values

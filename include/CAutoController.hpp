@@ -2,11 +2,12 @@
 // Created by Ronal on 5/7/2024.
 //
 
-#include <opencv2/opencv_modules.hpp>
+#include <thread>
+#include <vector>
+
 #include <opencv2/opencv.hpp>
+#include <opencv2/opencv_modules.hpp>
 #include <spdlog/spdlog.h>
-#include "thread"
-#include "vector"
 
 class CAutoController {
 private:
