@@ -279,9 +279,6 @@ void CZoomyClient::update() {
         if (_use_local) {
             // if video capture not set up, connect here
             if (!_arena_capture.isOpened()) {
-                // for macOS ONLY
-                _arena_gst_string = "avfvideosrc device-index=1 ! appsink";
-                // attempt to connect to udp source, timeout at 1 second
                 _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
             }
 
@@ -517,22 +514,16 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
     ImGui::RadioButton("Remote", &_cam_location, 1);
     if (!_cam_location) {
-
-        int item_selected_idx = 0;
-        std::string combo_preview_value = "Camera";
+        static char gst_string[64] = "avfvideosrc device-index=1 ! appsink";
         ImGui::PushItemWidth(-FLT_MIN);
-        if (ImGui::BeginCombo("##lcselect", combo_preview_value.c_str())) {
-            for (int i = 0; i < 3; i++) {
-                const bool is_selected = (item_selected_idx == i);
-                if (ImGui::Selectable("Camera 0", is_selected)) {
-                    item_selected_idx = i;
-                }
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected) ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
+        ImGui::Text("GStreamer string:");
+        ImGui::BeginDisabled(_use_local);
+        ImGui::InputText("###gst_string", gst_string, 64);
+        if (ImGui::Button("Open GStreamer camera")) {
+            _arena_gst_string = gst_string;
+            _use_local = true;
         }
-        ImGui::Checkbox("Use", &_use_local);
+        ImGui::EndDisabled();
         ImGui::PopItemWidth();
     }
 
