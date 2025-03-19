@@ -56,14 +56,13 @@ void CAutoController::runToPoint() {
     if (!_overheadImg->empty()) {
         std::vector<cv::Vec4i> hierarchy;
         std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Point> contour;
 
         cv::findContours(_masked_img, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         int biggest = 0;
         cv::Rect car;
-        for (int i = 0; i < contours.size(); i++) {
-            cv::Rect r = boundingRect(contours.at(i));
+        for (const auto & contour : contours) {
+            cv::Rect r = boundingRect(contour);
             if ((r.width * r.height) > biggest) {
                 biggest = r.width * r.height;
                 car = r;
