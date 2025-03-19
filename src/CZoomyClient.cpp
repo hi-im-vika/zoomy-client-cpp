@@ -425,6 +425,8 @@ void CZoomyClient::update() {
         }
     }
 
+    _values.at(value_type::GC_X) = _relation;
+
     // update last known car position if auto enabled
     if (_auto) {
         _last_car_pos.x = (float) _autonomous.get_car().x;
@@ -469,9 +471,9 @@ void CZoomyClient::draw() {
             case SDL_CONTROLLERBUTTONDOWN:
             case SDL_CONTROLLERBUTTONUP:
                 //_values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
-                _values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
-                _values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
-                _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
+                //_values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
+                //_values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
+                //_values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
                 _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
@@ -495,6 +497,9 @@ void CZoomyClient::draw() {
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
                 } else if (_auto) {
                     _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                } else if (!_relation) {
+                    _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
                     _values.at(value_type::GC_RIGHTY) = 0;
                 } else {
                     _values.at(value_type::GC_RIGHTX) = 0;
@@ -686,6 +691,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
+    ImGui::Checkbox("Relative Motion", &_relation);
     ImGui::Checkbox("Autonomous mode", &_use_auto);
     ImGui::EndGroup();
 

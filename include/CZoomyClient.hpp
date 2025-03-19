@@ -77,7 +77,7 @@ private:
     std::vector<int> _values;
     std::vector<cv::Point> _joystick;
     SDL_GameController *_gc;
-    bool _auto;
+    bool _auto, _relation;
     std::string _xml_vals;
     std::vector <CAutoController::waypoint> _waypoints;
 
