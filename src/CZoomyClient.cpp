@@ -209,7 +209,11 @@ CZoomyClient::CZoomyClient(cv::Size s) {
                         {"opencv", {
                                 {"hue", {8, 18}},
                                 {"sat", {122,255}},
-                                {"val", {141,255}}
+                                {"val", {141,255}},
+                                {"corners", {{100,100},
+                                             {100,200},
+                                             {200,200},
+                                             {200,100}}}
                         }},
                 }}};
         std::ofstream o("settings.json");
@@ -235,6 +239,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _hsv_threshold_high = {_json_data["settings"]["opencv"]["hue"][1],
                            _json_data["settings"]["opencv"]["sat"][1],
                            _json_data["settings"]["opencv"]["val"][1]};
+
 
 
     // preallocate texture handle
