@@ -77,7 +77,6 @@ void CAutoController::runToPoint() {
         _location = cv::Point(car.x + car.width / 2, car.y + car.height / 2);
 
         spdlog::info("Car location: {:d} {:d}", _location.x, _location.y);
-//        cv::circle(*_overheadImg, _destination, _overheadImg->cols / 40, cv::Scalar(255, 0, 0), -1);
 
         if (hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2)) <
                 ((_speed / 32768.0) * _overheadImg->cols / 5)) {
