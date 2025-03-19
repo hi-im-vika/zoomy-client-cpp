@@ -309,7 +309,6 @@ void CZoomyClient::update() {
         } else {
             _arena_capture.release();
         }
-//        _arena_raw_img = _dashcam_img.clone();
     }
 
     // calculate values for homography
