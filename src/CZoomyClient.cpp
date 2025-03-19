@@ -240,7 +240,17 @@ CZoomyClient::CZoomyClient(cv::Size s) {
                            _json_data["settings"]["opencv"]["sat"][1],
                            _json_data["settings"]["opencv"]["val"][1]};
 
+    _quad_points = {ImVec2(_json_data["settings"]["opencv"]["corners"][0][0],_json_data["settings"]["opencv"]["corners"][0][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][1][0],_json_data["settings"]["opencv"]["corners"][1][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][2][0],_json_data["settings"]["opencv"]["corners"][2][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][3][0],_json_data["settings"]["opencv"]["corners"][3][1])};
 
+    _homography_corners = {
+            cv::Point((int) _quad_points.at(0).x,(int) _quad_points.at(0).y),
+            cv::Point((int) _quad_points.at(1).x,(int) _quad_points.at(1).y),
+            cv::Point((int) _quad_points.at(2).x,(int) _quad_points.at(2).y),
+            cv::Point((int) _quad_points.at(3).x,(int) _quad_points.at(3).y),
+    };
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
@@ -279,6 +289,11 @@ CZoomyClient::~CZoomyClient() {
     _json_data["settings"]["opencv"]["hue"] = {_hsv_threshold_low[0], _hsv_threshold_high[0]};
     _json_data["settings"]["opencv"]["sat"] = {_hsv_threshold_low[1], _hsv_threshold_high[1]};
     _json_data["settings"]["opencv"]["val"] = {_hsv_threshold_low[2], _hsv_threshold_high[2]};
+
+    _json_data["settings"]["opencv"]["corners"][0] = {_quad_points.at(0).x,_quad_points.at(0).y};
+    _json_data["settings"]["opencv"]["corners"][1] = {_quad_points.at(1).x,_quad_points.at(1).y};
+    _json_data["settings"]["opencv"]["corners"][2] = {_quad_points.at(2).x,_quad_points.at(2).y};
+    _json_data["settings"]["opencv"]["corners"][3] = {_quad_points.at(3).x,_quad_points.at(3).y};
 
     std::ofstream o("settings.json");
     o << std::setw(4) << _json_data << std::endl;
