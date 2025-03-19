@@ -362,23 +362,19 @@ void CZoomyClient::update() {
     cv::Mat hsv, inrange, mask, anded;
 
     cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
-    cv::inRange(hsv, (cv::Scalar) _hsv_threshold_low, s(cv::Scalar) _hsv_threshold_high ,inrange);
+    cv::inRange(hsv, (cv::Scalar) _hsv_threshold_low, (cv::Scalar) _hsv_threshold_high ,inrange);
     inrange.convertTo(mask, CV_8UC1);
     cv::bitwise_and(pregen, pregen, anded, mask);
 
     _autonomous.set_mask(mask);
     if (_show_mask) _arena_mask_img = anded.clone();
 
-//    if (_values.at(value_type::GC_Y)) {
-//        _auto = true;
-//        _step = 0;
-//    }
-//    if (_values.at(value_type::GC_B)) {
-//        _auto = false;
-//        _values.at(value_type::GC_A) = 0;
-//        _autonomous.endAutoTarget();
-//        _autonomous.endRunToPoint();
-//    }
+    if (_values.at(value_type::GC_Y)) {
+        _use_auto = true;
+    }
+    if (_values.at(value_type::GC_B)) {
+        _use_auto = false;
+    }
 
     if (_use_auto) {
         // only enable auto if not already disabled
