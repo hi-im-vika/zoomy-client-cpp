@@ -141,7 +141,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     // control init
     // pass dashcam and masked arena image to autonomous
-    if (!_autonomous.init(&_dashcam_img, &_arena_mask_img)) {
+    if (!_autonomous.init(&_dashcam_img, &_raw_mask)) {
         spdlog::error("Error during CAutoController init.");
         exit(-1);
     }
