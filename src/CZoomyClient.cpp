@@ -105,6 +105,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     }
     _arena_raw_img = _arena_img.clone();
     _arena_mask_img = _arena_img.clone();
+    _raw_mask = _arena_img.clone();
     _arena_warped_img = _arena_img.clone();
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
@@ -369,8 +370,10 @@ void CZoomyClient::update() {
     inrange.convertTo(mask, CV_8UC1);
     cv::bitwise_and(pregen, pregen, anded, mask);
 
-    // pass mask to autonomous code
-    _autonomous.set_mask(mask);
+    // copy raw mask to buffer for autonomous
+    _raw_mask = mask.clone();
+
+    // update mask shown to UI
     if (_show_mask) _arena_mask_img = anded.clone();
 
     // handle controller events for auto control

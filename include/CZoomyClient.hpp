@@ -53,6 +53,7 @@ private:
     cv::Mat _dashcam_img, _dashcam_raw_img;
     cv::Mat _arena_img, _arena_raw_img;
     cv::Mat _arena_mask_img;
+    cv::Mat _raw_mask;
     SDL_Event _evt;
     std::mutex _mutex_dashcam, _mutex_arena, _mutex_mask_gen;
     ImVec2 _arena_mouse_pos;
