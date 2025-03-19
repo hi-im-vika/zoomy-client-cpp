@@ -926,6 +926,10 @@ void CZoomyClient::imgui_draw_arena() {
                                ((float) _last_car_pos.y / _coord_scale) + _arena_last_cursor_pos.y);
         ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
                 ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
+        pt_ctr = ImVec2(((float) _autonomous.get_destination().x / _coord_scale) + _arena_last_cursor_pos.x,
+                        ((float) _autonomous.get_destination().y / _coord_scale) + _arena_last_cursor_pos.y);
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
+                ImVec4(0.0f, 0.0f, 1.0f, 1.0f)));
     }
 
     ImGui::End();
