@@ -222,6 +222,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     i >> _json_data;
     i.close();
 
+    // read in settings
     snprintf(_host_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["host"]).c_str());
     snprintf(_port_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["port"]).c_str());
     snprintf(_host_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["host"]).c_str());
@@ -263,6 +264,8 @@ CZoomyClient::~CZoomyClient() {
     _json_data.clear();
     i >> _json_data;
     i.close();
+
+    // retrieve settings from program and save
     _json_data["settings"]["networking"]["udp"]["host"] = _host_udp;
     _json_data["settings"]["networking"]["udp"]["port"] = _port_udp;
     _json_data["settings"]["networking"]["tcp"]["host"] = _host_tcp;
