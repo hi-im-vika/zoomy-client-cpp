@@ -655,51 +655,27 @@ void CZoomyClient::imgui_draw_settings() {
         ImGui::Text("TCP Host:");
         ImGui::TableSetColumnIndex(1);
         ImGui::PushItemWidth(-FLT_MIN);
-        ImGui::InputText("###tcp_host_input", tcp_host, 64);
+        ImGui::InputText("###tcp_host_input", _host_tcp, 64);
         ImGui::PopItemWidth();
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Host:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_host_input", _host_tcp, 64);
-    ImGui::PopItemWidth();
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
         ImGui::Text("TCP Port:");
         ImGui::TableSetColumnIndex(1);
         ImGui::PushItemWidth(-FLT_MIN);
-        ImGui::InputText("###tcp_port_input", tcp_port, 64);
+        ImGui::InputText("###tcp_port_input", _port_tcp, 64);
         ImGui::PopItemWidth();
         ImGui::EndTable();
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Port:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_port_input", _port_tcp, 64);
-    ImGui::PopItemWidth();
-    ImGui::EndTable();
 
         ImGui::PushItemWidth(-FLT_MIN);
         if (ImGui::Button("Connect to TCP")) {
-            _tcp_host = tcp_host;
-            _tcp_port = tcp_port;
+            _tcp_host = _host_tcp;
+            _tcp_port = _port_tcp;
             _tcp_req_ready = true;
         }
         ImGui::PopItemWidth();
         ImGui::EndDisabled();
     }
-
-    ImGui::PushItemWidth(-FLT_MIN);
-    if (ImGui::Button("Connect to TCP")) {
-        _tcp_host = _host_tcp;
-        _tcp_port = _port_tcp;
-        _tcp_req_ready = true;
-    }
-    ImGui::PopItemWidth();
-    ImGui::EndDisabled();
     ImGui::EndGroup();
 
     // draw checkboxes for toggleable values
