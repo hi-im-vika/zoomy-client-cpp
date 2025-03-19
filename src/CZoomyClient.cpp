@@ -190,11 +190,21 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _json_data.clear();
     i >> _json_data;
+    i.close();
+
     snprintf(_host_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["host"]).c_str());
     snprintf(_port_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["port"]).c_str());
     snprintf(_host_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["host"]).c_str());
     snprintf(_port_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["port"]).c_str());
-    i.close();
+
+    _hsv_threshold_low = {_json_data["settings"]["opencv"]["hue"][0],
+                          _json_data["settings"]["opencv"]["sat"][0],
+                          _json_data["settings"]["opencv"]["val"][0]};
+
+    _hsv_threshold_high = {_json_data["settings"]["opencv"]["hue"][1],
+                           _json_data["settings"]["opencv"]["sat"][1],
+                           _json_data["settings"]["opencv"]["val"][1]};
+
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
