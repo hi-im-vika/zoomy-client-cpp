@@ -79,6 +79,7 @@ private:
     bool _flip_image;
     bool _show_mask;
     bool _show_waypoints;
+    bool _show_preview;
     bool _use_auto;
     std::vector<std::string> _hsv_slider_names;
     cv::Scalar_<int> _hsv_threshold_low, _hsv_threshold_high;

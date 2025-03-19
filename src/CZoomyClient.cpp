@@ -88,6 +88,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
+    _show_preview = true;
     bool white = true;
     cv::Vec3b pix_white(255,255,255);
     cv::Vec3b pix_black(0,0,0);
@@ -507,8 +508,10 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Begin("Settings", nullptr);
     // camera settings
     ImGui::SeparatorText("Camera");
+    ImGui::BeginDisabled(_use_local);
     ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
     ImGui::RadioButton("Remote", &_cam_location, 1);
+    ImGui::EndDisabled();
     if (!_cam_location) {
         static char gst_string[64] = "avfvideosrc device-index=1 ! appsink";
         ImGui::PushItemWidth(-FLT_MIN);
@@ -765,6 +768,7 @@ void CZoomyClient::imgui_draw_arena() {
         ImGui::Checkbox("Mask", &_show_mask);
         ImGui::Checkbox("Waypoints", &_show_waypoints);
         ImGui::Checkbox("Homography", &_show_homography);
+        ImGui::Checkbox("Preview", &_show_preview);
         ImGui::EndDisabled();
         ImGui::EndMenuBar();
     }
@@ -839,7 +843,8 @@ void CZoomyClient::imgui_draw_arena() {
 //            ImGui::GetWindowDrawList()->AddCircleFilled(i, 5, ImColor(ImVec4(0.0f,1.0f,0.0f,1.0f)));
 //        }
 
-        if (!_auto) {
+
+        if (!_auto && _show_preview) {
             // minimap for homography preview
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
             ImVec2 window_pos = _arena_last_cursor_pos;
