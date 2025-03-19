@@ -148,6 +148,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
 
+    // set default hsv thresholds
     _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
     _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
 
@@ -358,6 +359,7 @@ void CZoomyClient::update() {
     cv::warpPerspective(image_to_warp, image_to_warp, arena_homography, cv::Size(ARENA_DIM, ARENA_DIM));
     _arena_warped_img = image_to_warp.clone();
 
+    // select region to mask
     cv::Mat pregen = _show_homography ? _arena_warped_img.clone() : _arena_raw_img.clone();
     cv::Mat hsv, inrange, mask, anded;
 
@@ -366,9 +368,11 @@ void CZoomyClient::update() {
     inrange.convertTo(mask, CV_8UC1);
     cv::bitwise_and(pregen, pregen, anded, mask);
 
+    // pass mask to autonomous code
     _autonomous.set_mask(mask);
     if (_show_mask) _arena_mask_img = anded.clone();
 
+    // handle controller events for auto control
     if (_values.at(value_type::GC_Y)) {
         _use_auto = true;
     }
@@ -376,6 +380,7 @@ void CZoomyClient::update() {
         _use_auto = false;
     }
 
+    // handle gui events for auto control
     if (_use_auto) {
         // only enable auto if not already disabled
         if (!_auto) {
@@ -392,6 +397,7 @@ void CZoomyClient::update() {
         }
     }
 
+    // update last known car position if auto enabled
     if (_auto) {
         _last_car_pos.x = (float) _autonomous.get_car().x;
         _last_car_pos.y = (float) _autonomous.get_car().y;
@@ -912,6 +918,7 @@ void CZoomyClient::imgui_draw_arena() {
         }
     }
 
+    // show car point in imgui
     if (_auto) {
         ImVec2 pt_ctr = ImVec2(((float) _last_car_pos.x / _coord_scale) + _arena_last_cursor_pos.x,
                                ((float) _last_car_pos.y / _coord_scale) + _arena_last_cursor_pos.y);
