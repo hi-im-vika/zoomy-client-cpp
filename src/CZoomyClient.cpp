@@ -148,8 +148,8 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
 
-    _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
-    _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
+    _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
+    _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
 
     // smaller rot value = ccw, larger rot value = cw
     _waypoints = {
