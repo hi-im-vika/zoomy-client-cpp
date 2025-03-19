@@ -393,8 +393,8 @@ void CZoomyClient::update() {
     }
 
     if (_auto) {
-        _last_car_pos.x = _autonomous.get_car().x;
-        _last_car_pos.y = _autonomous.get_car().y;
+        _last_car_pos.x = (float) _autonomous.get_car().x;
+        _last_car_pos.y = (float) _autonomous.get_car().y;
     }
 
     if (!_autonomous.isRunning() && _auto) {
