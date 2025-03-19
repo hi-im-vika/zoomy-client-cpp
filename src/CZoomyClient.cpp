@@ -360,12 +360,8 @@ void CZoomyClient::update() {
     if (_show_mask) _arena_mask_img = anded.clone();
 
     // handle controller events for auto control
-    if (_values.at(value_type::GC_Y)) {
-        _use_auto = true;
-    }
-    if (_values.at(value_type::GC_B)) {
-        _use_auto = false;
-    }
+    if (_values.at(value_type::GC_Y)) _use_auto = true;
+    if (_values.at(value_type::GC_B)) _use_auto = false;
 
     // handle gui events for auto control
     if (_use_auto) {
