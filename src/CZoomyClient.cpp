@@ -821,15 +821,6 @@ void CZoomyClient::imgui_draw_arena() {
 
         if (!_show_homography) {
 
-            // print mouse location info
-            ImGui::Text("(%d, %d)", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
-            ImGui::Text("dp1, dp2, dp3, dp4: %.2f, %.2f, %.2f, %.2f",
-                        _dist_quad_points.at(0),
-                        _dist_quad_points.at(1),
-                        _dist_quad_points.at(2),
-                        _dist_quad_points.at(3));
-            ImGui::Text("Closest to: %d", _closest_quad_point + 1);
-
             // implement drag to reshape quad without having to be directly over corner
             static bool dragging = false;
             static ImVec2 drag_start_pos(0,0);
@@ -940,12 +931,19 @@ void CZoomyClient::imgui_draw_arena() {
 
 void CZoomyClient::imgui_draw_debug() {
     // imgui window (for debug)
-    ImGui::Begin("ImGui", nullptr);
-    ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
+    ImGui::Begin("Debug", nullptr);
     ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
-    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
-    ImGui::SeparatorText("OpenCV Build Information");
-    ImGui::Text("%s", cv::getBuildInformation().c_str());
+    // print mouse location info
+    ImGui::Text("(%d, %d)", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+    ImGui::Text("dp1, dp2, dp3, dp4: %.2f, %.2f, %.2f, %.2f",
+                _dist_quad_points.at(0),
+                _dist_quad_points.at(1),
+                _dist_quad_points.at(2),
+                _dist_quad_points.at(3));
+    ImGui::Text("Closest to: %d", _closest_quad_point + 1);
+//    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
+//    ImGui::SeparatorText("OpenCV Build Information");
+//    ImGui::Text("%s", cv::getBuildInformation().c_str());
     ImGui::ShowDemoWindow();
 
     ImGui::End();
