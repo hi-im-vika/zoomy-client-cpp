@@ -3,7 +3,7 @@
 //
 #include "../include/CAutoController.hpp"
 
-#define MOVE_SPEED 255
+#define MOVE_SPEED 1.0
 
 CAutoController::CAutoController() = default;
 
@@ -72,15 +72,19 @@ void CAutoController::runToPoint() {
 
         spdlog::info("P2P ON");
 
-        _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
-        _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
+        _autoInput[MOVE_X] = _speed * MOVE_SPEED * (_destination.x - (car.x + car.width / 2))/
+                hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2));
+        _autoInput[MOVE_Y] = _speed * MOVE_SPEED * (_destination.y - (car.y + car.height / 2))/
+                hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2));
         _location = cv::Point(car.x + car.width / 2, car.y + car.height / 2);
 
         spdlog::info("Car location: {:d} {:d}", _location.x, _location.y);
 
         if (hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2)) <
-                ((_speed / 32768.0) * _overheadImg->cols / 5)) {
+                ((_speed / 32768.0) * _overheadImg->cols / 3)) {
             _threadExit[1] = true;
+            _autoInput[MOVE_X] = 0;
+            _autoInput[MOVE_Y] = 0;
         }
 //        _threadExit[1] = true;
     }

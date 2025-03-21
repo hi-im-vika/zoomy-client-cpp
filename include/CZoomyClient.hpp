@@ -77,7 +77,7 @@ private:
     std::vector<int> _values;
     std::vector<cv::Point> _joystick;
     SDL_GameController *_gc;
-    bool _auto;
+    bool _auto, _relation;
     std::string _xml_vals;
     std::vector <CAutoController::waypoint> _waypoints;
 
@@ -150,6 +150,11 @@ private:
     static void fit_texture_to_window(cv::Mat &input_image, GLuint &output_texture, float &scale, ImVec2 &cursor_screen_pos_before_image);
 
     static void mat_to_tex(cv::Mat &input, GLuint &output);
+
+    std::chrono::steady_clock::time_point _deltaTime;
+    float _angle;
+    bool _demo;
+    int _autospeed;
 
     void udp_rx();
     void udp_tx();
