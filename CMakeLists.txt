@@ -10,9 +10,8 @@ set(CMAKE_USE_WIN32_THREADS_INIT 0)
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-set(OpenGL_GL_PREFERENCE GLVND)
+set(OpenGL_GL_PREFERENCE LEGACY)
 
-add_subdirectory(vendor)
 set(OpenCV_STATIC ON)
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -34,9 +33,26 @@ add_executable(zoomy-client
         include/CAutoController.hpp
 )
 
+add_subdirectory(vendor)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui vika-net)
+
+set(OpenCV_STATIC ON)
+find_package(OpenCV REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+
+find_package(OpenGL REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OpenGL::GL)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
+
+find_package(SDL2 REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL2::SDL2)
+
+#find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+
 if (WIN32)
-    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui nlohmann_json::nlohmann_json spdlog::spdlog SDL2::SDL2 vika-net ws2_32 -lmingw32 -mwindows)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ws2_32 -lmingw32 -mwindows)
     add_definitions(-DSDL_MAIN_HANDLED)
-else ()
-    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui nlohmann_json::nlohmann_json spdlog::spdlog SDL2::SDL2 vika-net)
 endif ()
