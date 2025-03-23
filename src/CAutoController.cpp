@@ -3,7 +3,7 @@
 //
 #include "../include/CAutoController.hpp"
 
-#define MOVE_SPEED 255
+#define MOVE_SPEED 1.0
 
 CAutoController::CAutoController() = default;
 
@@ -16,9 +16,6 @@ bool CAutoController::init(cv::Mat *car, cv::Mat *above) {
     _autoInput = std::vector<int>(4,0);
     _carImg = car;
     _overheadImg = above;
-    _masked_img = cv::Mat::ones(cv::Size(600,600), CV_8UC3);
-    _hsv_threshold_low = cv::Scalar_<int>(8,122,141);
-    _hsv_threshold_high = cv::Scalar_<int>(18,255,255);
     return true;
 }
 
@@ -57,24 +54,16 @@ void CAutoController::autoTarget() {
 
 void CAutoController::runToPoint() {
     if (!_overheadImg->empty()) {
+        cv::Mat working_copy = _overheadImg->clone();
         std::vector<cv::Vec4i> hierarchy;
         std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Point> contour;
 
-        _imgLock.lock();
-        cv::cvtColor(*_overheadImg, _above, cv::COLOR_BGR2HSV);
-        cv::dilate(_above, _above, cv::Mat());
-        cv::inRange(_above, _hsv_threshold_low, _hsv_threshold_high, _above);
-        _above.convertTo(_above, CV_8UC1);
-        cv::findContours(_above, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-        _imgLock.unlock();
-
-        _masked_img = _above;
+        cv::findContours(working_copy, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         int biggest = 0;
         cv::Rect car;
-        for (int i = 0; i < contours.size(); i++) {
-            cv::Rect r = boundingRect(contours.at(i));
+        for (const auto & contour : contours) {
+            cv::Rect r = boundingRect(contour);
             if ((r.width * r.height) > biggest) {
                 biggest = r.width * r.height;
                 car = r;
@@ -83,17 +72,19 @@ void CAutoController::runToPoint() {
 
         spdlog::info("P2P ON");
 
-        _autoInput[MOVE_X] = MOVE_SPEED * (_destination.x - (car.x + car.width / 2)) * _speed / 32768.0;
-        _autoInput[MOVE_Y] = MOVE_SPEED * (_destination.y - (car.y + car.height / 2)) * _speed / 32768.0;
+        _autoInput[MOVE_X] = _speed * MOVE_SPEED * (_destination.x - (car.x + car.width / 2))/
+                hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2));
+        _autoInput[MOVE_Y] = _speed * MOVE_SPEED * (_destination.y - (car.y + car.height / 2))/
+                hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2));
+        _location = cv::Point(car.x + car.width / 2, car.y + car.height / 2);
 
-        std::cout << cv::Point((car.x + car.width / 2), (car.y + car.height / 2)) << std::endl;
-        cv::circle(*_overheadImg, cv::Point((car.x + car.width / 2), (car.y + car.height / 2)), _overheadImg->cols / 60,
-                   cv::Scalar(0, 255, 0), -1);
-        cv::circle(*_overheadImg, _destination, _overheadImg->cols / 40, cv::Scalar(255, 0, 0), -1);
+        spdlog::info("Car location: {:d} {:d}", _location.x, _location.y);
 
         if (hypot(_destination.x - (car.x + car.width / 2), _destination.y - (car.y + car.height / 2)) <
-                ((_speed / 32768.0) * _overheadImg->cols / 5)) {
+                ((_speed / 32768.0) * _overheadImg->cols / 3)) {
             _threadExit[1] = true;
+            _autoInput[MOVE_X] = 0;
+            _autoInput[MOVE_Y] = 0;
         }
 //        _threadExit[1] = true;
     }
@@ -130,22 +121,10 @@ bool CAutoController::isRunning() {
     return !_threadExit[1];
 }
 
-cv::Mat CAutoController::get_masked_image() {
-    return _masked_img;
+cv::Point CAutoController::get_car() {
+    return _location;
 }
 
-cv::Scalar_<int> CAutoController::get_hsv_threshold_low() {
-    return _hsv_threshold_low;
-}
-
-cv::Scalar_<int> CAutoController::get_hsv_threshold_high() {
-    return _hsv_threshold_high;
-}
-
-void CAutoController::set_hsv_threshold_low(cv::Scalar_<int> &hsv_low) {
-    _hsv_threshold_low = hsv_low;
-}
-
-void CAutoController::set_hsv_threshold_high(cv::Scalar_<int> &hsv_high) {
-    _hsv_threshold_high = hsv_high;
+cv::Point CAutoController::get_destination() {
+    return _destination;
 }

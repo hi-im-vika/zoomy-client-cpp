@@ -8,8 +8,10 @@
 
 #define PING_TIMEOUT 1000
 #define NET_DELAY 35
-#define DEADZONE 2048
-#define ARENA_DIM 600
+#define DEADZONE 4096
+#define ARENA_DIM 1440
+#define DEMO_SPEED 0.3
+#define DEMO_ROTATE 0.7
 
 // increase this value if malloc_error_break happens too often
 #define TCP_DELAY 30
@@ -17,6 +19,10 @@
 
 CZoomyClient::CZoomyClient(cv::Size s) {
     _window_size = s;
+    _angle = 0;
+    _deltaTime = std::chrono::steady_clock::now();
+    _demo = true;
+    _autospeed = 164;
 
     // SDL init
     uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
@@ -88,7 +94,26 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _use_dashcam = false;
     _dashcam_img = cv::Mat::ones(cv::Size(20, 20), CV_8UC3);
     _arena_img = cv::Mat::ones(cv::Size(ARENA_DIM, ARENA_DIM), CV_8UC3);
-    _arena_mask_img = _arena_img;
+    _show_preview = true;
+    bool white = true;
+    cv::Vec3b pix_white(255,255,255);
+    cv::Vec3b pix_black(0,0,0);
+    int skip = ARENA_DIM / 8.0f;
+    for (int y = 0; y < _arena_img.rows; y++) {
+        if (!(y % skip)) white = !white;
+        for (int x = 0; x < _arena_img.cols; x++) {
+            if (!(x % skip)) white = !white;
+            if (white) {
+                _arena_img.at<cv::Vec3b>(y,x) = pix_white;
+            } else {
+                _arena_img.at<cv::Vec3b>(y,x) = pix_black;
+            }
+        }
+    }
+    _arena_raw_img = _arena_img.clone();
+    _arena_mask_img = _arena_img.clone();
+    _raw_mask = _arena_img.clone();
+    _arena_warped_img = _arena_img.clone();
     _flip_image = false;
     _arena_mouse_pos = ImVec2(0, 0);
     _hsv_slider_names = {
@@ -98,6 +123,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             "Saturation (upper)",
             "Value (lower)",
             "Value (upper)",
+            "Autonomy  speed",
     };
     _pointer_hsv_thresholds = {
             &_hsv_threshold_low[0],
@@ -106,10 +132,25 @@ CZoomyClient::CZoomyClient(cv::Size s) {
             &_hsv_threshold_high[1],
             &_hsv_threshold_low[2],
             &_hsv_threshold_high[2],
+            &_autospeed
     };
 
+    _cam_location = 0; // 0 for local, 1 for remote
+
+    _homography_corners = {
+            cv::Point(100,100),
+            cv::Point(200,100),
+            cv::Point(200,200),
+            cv::Point(100,200)
+    };
+
+    _quad_points = std::vector<ImVec2>(4);
+    _quad_points_scaled = std::vector<ImVec2>(4);
+    _dist_quad_points = std::vector<double>(4);
+
     // control init
-    if (!_autonomous.init(&_dashcam_img, &_arena_raw_img)) {
+    // pass dashcam and masked arena image to autonomous
+    if (!_autonomous.init(&_dashcam_img, &_raw_mask)) {
         spdlog::error("Error during CAutoController init.");
         exit(-1);
     }
@@ -118,80 +159,114 @@ CZoomyClient::CZoomyClient(cv::Size s) {
 
     _joystick = std::vector<cv::Point>(2, cv::Point(0, 0));
 
-    _hsv_threshold_low = _autonomous.get_hsv_threshold_low();
-    _hsv_threshold_high = _autonomous.get_hsv_threshold_high();
+    // waypoints
+    // check if json exists, load if so, create if not
+    std::ifstream i("waypoints.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"waypoints", {
+                {{"coords", {0,0}},     {"speed", 0},       {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {96,369}},  {"speed", 14000},   {"rotation", 0},    {"enable_turret", false}},
+                {{"coords", {245,450}}, {"speed", 14000},   {"rotation", 342},  {"enable_turret", false}},
+                {{"coords", {136,262}}, {"speed", 15000},   {"rotation", 90},   {"enable_turret", false}},
+                {{"coords", {137,130}}, {"speed", 14000},   {"rotation", 70},   {"enable_turret", false}},
+                {{"coords", {327,115}}, {"speed", 14000},   {"rotation", 210},  {"enable_turret", false}},
+                {{"coords", {511,147}}, {"speed", 14000},   {"rotation", 180},  {"enable_turret", false}},
+                {{"coords", {458,334}}, {"speed", 15000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {578,421}}, {"speed", 14000},   {"rotation", 270},  {"enable_turret", false}},
+                {{"coords", {572,535}}, {"speed", 20000},   {"rotation", 270},  {"enable_turret", false}},
+        }}};
 
-    // smaller rot value = ccw, larger rot value = cw
-    _waypoints = {
-            CAutoController::waypoint{     // WAYPOINT 0
-                    cv::Point(0, 0),
-                    0,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 1
-                    cv::Point(96, 369),
-                    14000,
-                    0,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 2 (south target) (fan favourite)
-                    cv::Point(245, 450),
-                    14000,
-                    342,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 3
-                    cv::Point(136, 262),
-                    15000,
-                    90,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 4
-                    cv::Point(137, 130),
-                    14000,
-                    70,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 5
-                    cv::Point(327, 115),
-                    14000,
-                    210,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 6
-                    cv::Point(511, 147),
-                    14000,
-                    180,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 7
-//                cv::Point(515, 350),
-                    cv::Point(458, 334),
-                    15000,
-                    270,
-                    true
-            },
-            CAutoController::waypoint{     // WAYPOINT 8
-                    cv::Point(578, 421),
-                    14000,
-                    270,
-                    false
-            },
-            CAutoController::waypoint{     // WAYPOINT 9
-                    cv::Point(572, 535),
-                    20000,
-                    270,
-                    false
-            },
+        std::ofstream o("waypoints.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("waypoints.json");
+    }
+
+    i >> _json_data;
+    for (auto it : _json_data["waypoints"]) {
+        _waypoints.push_back(CAutoController::waypoint{
+            cv::Point((int) it["coords"][0], (int) it["coords"][1]),
+            (int) it["speed"],
+            (int) it["rotation"],
+            (bool) it["enable_turret"]});
+    }
+    i.close();
+
+    // settings
+    i = std::ifstream("settings.json");
+    if (!i.good()) {
+        i.close();
+        // create file wtih default waypoints
+        nlohmann::json j = {
+                // smaller rot value = ccw, larger rot value = cw
+                {"settings", {
+                        {"networking", {
+                                {"udp", {
+                                        {"host", "192.168.1.104"},
+                                        {"port", "46188"}}
+                                        },
+                                {"tcp", {
+                                         {"host", "192.168.1.156"},
+                                         {"port", "4006"}
+                                 }}
+                        }},
+                        {"opencv", {
+                                {"hue", {8, 18}},
+                                {"sat", {122,255}},
+                                {"val", {141,255}},
+                                {"corners", {{100,100},
+                                             {100,200},
+                                             {200,200},
+                                             {200,100}}}
+                        }},
+                }}};
+        std::ofstream o("settings.json");
+        o << std::setw(4) << j << std::endl;
+        o.close();
+        i = std::ifstream("settings.json");
+    }
+
+    _json_data.clear();
+    i >> _json_data;
+    i.close();
+
+    // read in settings
+    snprintf(_host_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["host"]).c_str());
+    snprintf(_port_udp,64,"%s",((std::string) _json_data["settings"]["networking"]["udp"]["port"]).c_str());
+    snprintf(_host_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["host"]).c_str());
+    snprintf(_port_tcp,64,"%s",((std::string) _json_data["settings"]["networking"]["tcp"]["port"]).c_str());
+
+    _hsv_threshold_low = {_json_data["settings"]["opencv"]["hue"][0],
+                          _json_data["settings"]["opencv"]["sat"][0],
+                          _json_data["settings"]["opencv"]["val"][0]};
+
+    _hsv_threshold_high = {_json_data["settings"]["opencv"]["hue"][1],
+                           _json_data["settings"]["opencv"]["sat"][1],
+                           _json_data["settings"]["opencv"]["val"][1]};
+
+    _quad_points = {ImVec2(_json_data["settings"]["opencv"]["corners"][0][0],_json_data["settings"]["opencv"]["corners"][0][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][1][0],_json_data["settings"]["opencv"]["corners"][1][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][2][0],_json_data["settings"]["opencv"]["corners"][2][1]),
+                    ImVec2(_json_data["settings"]["opencv"]["corners"][3][0],_json_data["settings"]["opencv"]["corners"][3][1])};
+
+    _homography_corners = {
+            cv::Point((int) _quad_points.at(0).x,(int) _quad_points.at(0).y),
+            cv::Point((int) _quad_points.at(1).x,(int) _quad_points.at(1).y),
+            cv::Point((int) _quad_points.at(2).x,(int) _quad_points.at(2).y),
+            cv::Point((int) _quad_points.at(3).x,(int) _quad_points.at(3).y),
     };
 
     // preallocate texture handle
     glGenTextures(1, &_dashcam_tex);
     glGenTextures(1, &_arena_tex);
+    glGenTextures(1, &_preview_tex);
 
-//    // net init
-//    // TODO: thread network update separately from
+    // net init
+    // TODO: thread network update separately from
 
     _udp_req_ready = false;
     _tcp_req_ready = false;
@@ -205,7 +280,34 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _thread_update_tcp.detach();
 }
 
-CZoomyClient::~CZoomyClient() = default;
+CZoomyClient::~CZoomyClient() {
+    spdlog::info("Saving config...");
+
+    std::ifstream i("settings.json");
+    _json_data.clear();
+    i >> _json_data;
+    i.close();
+
+    // retrieve settings from program and save
+    _json_data["settings"]["networking"]["udp"]["host"] = _host_udp;
+    _json_data["settings"]["networking"]["udp"]["port"] = _port_udp;
+    _json_data["settings"]["networking"]["tcp"]["host"] = _host_tcp;
+    _json_data["settings"]["networking"]["tcp"]["port"] = _port_tcp;
+
+    _json_data["settings"]["opencv"]["hue"] = {_hsv_threshold_low[0], _hsv_threshold_high[0]};
+    _json_data["settings"]["opencv"]["sat"] = {_hsv_threshold_low[1], _hsv_threshold_high[1]};
+    _json_data["settings"]["opencv"]["val"] = {_hsv_threshold_low[2], _hsv_threshold_high[2]};
+
+    _json_data["settings"]["opencv"]["corners"][0] = {_quad_points.at(0).x,_quad_points.at(0).y};
+    _json_data["settings"]["opencv"]["corners"][1] = {_quad_points.at(1).x,_quad_points.at(1).y};
+    _json_data["settings"]["opencv"]["corners"][2] = {_quad_points.at(2).x,_quad_points.at(2).y};
+    _json_data["settings"]["opencv"]["corners"][3] = {_quad_points.at(3).x,_quad_points.at(3).y};
+
+    std::ofstream o("settings.json");
+    o << std::setw(4) << _json_data << std::endl;
+    o.close();
+    spdlog::info("Done");
+}
 
 void CZoomyClient::update() {
 
@@ -226,9 +328,7 @@ void CZoomyClient::update() {
 
         _video_capture.read(_dashcam_raw_img);
 
-        if (_flip_image) {
-            cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
-        }
+        if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
 
         if (!_dashcam_raw_img.empty()) {
             _detector_params = cv::aruco::DetectorParameters();
@@ -243,34 +343,117 @@ void CZoomyClient::update() {
         _video_capture.release();
     }
 
-    _autonomous.set_hsv_threshold_low(_hsv_threshold_low);
-    _autonomous.set_hsv_threshold_high(_hsv_threshold_high);
+    if (!_cam_location) {
+        if (_use_local) {
+            // if video capture not set up, connect here
+            if (!_arena_capture.isOpened()) {
+                _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
+            }
 
-    if (_show_mask) {
-        cv::Mat pregen = _arena_raw_img;
-        cv::Mat hsv, inrange, mask, anded;
+            // if source still not opened (timeout reached), default source to videotestsrc
+            if (!_arena_capture.isOpened()) {
+                spdlog::warn("Could not open gstreamer pipeline. Defaulting to videotestsrc");
+                _arena_gst_string = "videotestsrc ! aspectratiocrop aspect-ratio=1 ! appsink";
+                _arena_capture = cv::VideoCapture(_arena_gst_string, cv::CAP_GSTREAMER);
+            }
 
-        cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
-        cv::inRange(hsv,
-                    (cv::Scalar) _autonomous.get_hsv_threshold_low(),
-                    (cv::Scalar) _autonomous.get_hsv_threshold_high(),
-                    inrange);
-        inrange.convertTo(mask, CV_8UC1);
-        cv::bitwise_and(pregen, pregen, anded, mask);
-        _mutex_mask_gen.lock();
-        _arena_mask_img = anded;
-        _mutex_mask_gen.unlock();
+            // crop incoming arena image so it is 1:1 aspect ratio
+            cv::Mat temp;
+            cv::Size temp_size;
+            cv::Rect roi;
+            _arena_capture.read(temp);
+            temp_size.height = temp.rows;
+            temp_size.width = temp.cols;
+            roi.x = (temp_size.width / 2) / 2;
+            roi.y = 0;
+            roi.width = temp_size.width - ((temp_size.width / 2) / 2);
+            roi.height = temp_size.height;
+
+            _arena_raw_img = temp(roi).clone();
+//            if (_flip_image) cv::rotate(_dashcam_raw_img, _dashcam_raw_img, cv::ROTATE_180);
+        } else {
+            _arena_capture.release();
+        }
     }
 
-    if (_values.at(value_type::GC_Y)) {
-        _auto = true;
-        _step = 0;
+    // calculate values for homography
+    // make vector of points for quad
+    _quad_points = {
+            ImVec2((float) _homography_corners.at(0).x, (float) _homography_corners.at(0).y),
+            ImVec2((float) _homography_corners.at(1).x, (float) _homography_corners.at(1).y),
+            ImVec2((float) _homography_corners.at(2).x, (float) _homography_corners.at(2).y),
+            ImVec2((float) _homography_corners.at(3).x, (float) _homography_corners.at(3).y)
+    };
+
+    // get scale between real arena image and imgui texture dimensions
+    _coord_scale = ARENA_DIM / _arena_scale_factor;
+
+    // keep track of mouse distance to quad points
+    for (int i = 0; i < _quad_points.size(); i++) {
+        _dist_quad_points.at(i) = sqrt(pow((_arena_mouse_pos.x - _quad_points.at(i).x),2) + pow((_arena_mouse_pos.y - _quad_points.at(i).y),2));
     }
-    if (_values.at(value_type::GC_B)) {
-        _auto = false;
-        _values.at(value_type::GC_A) = 0;
-        _autonomous.endAutoTarget();
-        _autonomous.endRunToPoint();
+
+    // get scaled quad points
+    for (int i = 0; i < _quad_points.size(); i++) {
+        _quad_points_scaled.at(i) = ImVec2(
+                (_quad_points.at(i).x / _coord_scale) + _arena_last_cursor_pos.x,
+                (_quad_points.at(i).y / _coord_scale) + _arena_last_cursor_pos.y
+        );
+    }
+
+    // find closest quad point
+    auto it = std::min_element(std::begin(_dist_quad_points), std::end(_dist_quad_points));
+    _closest_quad_point = (int) std::distance(std::begin(_dist_quad_points),it);
+
+    cv::Mat image_to_warp = _arena_raw_img.clone();
+    std::vector<cv::Point2f> end = {cv::Point2f(0, 0), cv::Point2f(ARENA_DIM, 0), cv::Point2f(ARENA_DIM, ARENA_DIM),
+                                    cv::Point2f(0, ARENA_DIM)};
+    cv::Mat arena_homography = cv::findHomography(_homography_corners, end);
+    cv::warpPerspective(image_to_warp, image_to_warp, arena_homography, cv::Size(ARENA_DIM, ARENA_DIM));
+    _arena_warped_img = image_to_warp.clone();
+
+    // select region to mask
+    cv::Mat pregen = _show_homography ? _arena_warped_img.clone() : _arena_raw_img.clone();
+    cv::Mat hsv, inrange, mask, anded;
+
+    cv::cvtColor(pregen, hsv, cv::COLOR_BGR2HSV);
+    cv::inRange(hsv, (cv::Scalar) _hsv_threshold_low, (cv::Scalar) _hsv_threshold_high ,inrange);
+    inrange.convertTo(mask, CV_8UC1);
+    cv::bitwise_and(pregen, pregen, anded, mask);
+
+    // copy raw mask to buffer for autonomous
+    _raw_mask = mask.clone();
+
+    // update mask shown to UI
+    if (_show_mask) _arena_mask_img = anded.clone();
+
+    // handle controller events for auto control
+    if (_values.at(value_type::GC_Y) && !_demo) _use_auto = true;
+    if (_values.at(value_type::GC_B)) _use_auto = false;
+
+    // handle gui events for auto control
+    if (_use_auto) {
+        // only enable auto if not already disabled
+        if (!_auto) {
+            _auto = true;
+            _step = 0;
+        }
+    } else {
+        // only disable auto if already enabled
+        if (_auto) {
+            _auto = false;
+            _values.at(value_type::GC_A) = 0;
+            _autonomous.endAutoTarget();
+            _autonomous.endRunToPoint();
+        }
+    }
+
+    _values.at(value_type::GC_X) = _relation;
+
+    // update last known car position if auto enabled
+    if (_auto) {
+        _last_car_pos.x = (float) _autonomous.get_car().x;
+        _last_car_pos.y = (float) _autonomous.get_car().y;
     }
 
     if (!_autonomous.isRunning() && _auto) {
@@ -293,7 +476,8 @@ void CZoomyClient::update() {
 }
 
 void CZoomyClient::draw() {
-
+    float delta = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _deltaTime).count() / 18.0;
+    _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
         ImGui_ImplSDL2_ProcessEvent(&_evt);
@@ -311,9 +495,9 @@ void CZoomyClient::draw() {
             case SDL_CONTROLLERBUTTONDOWN:
             case SDL_CONTROLLERBUTTONUP:
                 //_values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
-                _values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
-                _values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
-                _values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
+                //_values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
+                //_values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
+                //_values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
             case SDL_CONTROLLERAXISMOTION:
                 _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
@@ -322,8 +506,14 @@ void CZoomyClient::draw() {
                 _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
 
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
-                    _values.at(value_type::GC_LEFTX) = _joystick[0].x;
-                    _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    if (_demo) {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x * DEMO_SPEED;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y * DEMO_SPEED;
+                    }
+                    else {
+                        _values.at(value_type::GC_LEFTX) = _joystick[0].x;
+                        _values.at(value_type::GC_LEFTY) = _joystick[0].y;
+                    }
                 } else if (_auto) {
                     _values.at(value_type::GC_LEFTX) = _autonomous.getAutoInput(CAutoController::MOVE_X);
                     _values.at(value_type::GC_LEFTY) = _autonomous.getAutoInput(CAutoController::MOVE_Y);
@@ -332,11 +522,25 @@ void CZoomyClient::draw() {
                     _values.at(value_type::GC_LEFTY) = 0;
                 }
 
+                if (_angle > 360.0)
+                    _angle -= 360.0;
+                else if (_angle < 0.0)
+                    _angle += 360.0;
+
                 if (hypot(_joystick[1].x, _joystick[1].y) > DEADZONE) {
+                    // look away this won't be pretty...
+                    if (_demo)
+                        _angle += DEMO_ROTATE * delta * _joystick[1].x / 32768.0;
+                    else
+                        _angle += delta * _joystick[1].x / 32768.0;
+                    // nevermind, doesn't look that bad
                     _values.at(value_type::GC_RIGHTX) = _joystick[1].x;
                     _values.at(value_type::GC_RIGHTY) = _joystick[1].y;
                 } else if (_auto) {
                     _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
+                    _values.at(value_type::GC_RIGHTY) = 0;
+                } else if (!_relation) {
+                    _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
                     _values.at(value_type::GC_RIGHTY) = 0;
                 } else {
                     _values.at(value_type::GC_RIGHTX) = 0;
@@ -344,6 +548,9 @@ void CZoomyClient::draw() {
                 }
 
                 _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+                if (!_auto) {
+                    _values.at(value_type::GC_LTRIG) = _angle;
+                }
                 break;
             default:
                 break;
@@ -369,7 +576,7 @@ void CZoomyClient::draw() {
     ImGui::Render();
 
     // render ImGui with OpenGL
-    glViewport(0, 0, static_cast<int>(io.DisplaySize.x), static_cast<int>(io.DisplaySize.y));
+    glViewport(0, 0, (int) io.DisplaySize.x, (int) io.DisplaySize.y);
     glClearColor(0.5F, 0.5F, 0.5F, 1.00F);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -391,8 +598,28 @@ void CZoomyClient::draw() {
 }
 
 void CZoomyClient::imgui_draw_settings() {
-    // networking settings
     ImGui::Begin("Settings", nullptr);
+    // camera settings
+    ImGui::SeparatorText("Camera");
+    ImGui::BeginDisabled(_use_local);
+    ImGui::RadioButton("Local", &_cam_location, 0); ImGui::SameLine();
+    ImGui::RadioButton("Remote", &_cam_location, 1);
+    ImGui::EndDisabled();
+    if (!_cam_location) {
+        static char gst_string[64] = "avfvideosrc device-index=1 ! appsink";
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::Text("GStreamer string:");
+        ImGui::BeginDisabled(_use_local);
+        ImGui::InputText("###gst_string", gst_string, 64);
+        if (ImGui::Button("Open GStreamer camera")) {
+            _arena_gst_string = gst_string;
+            _use_local = true;
+        }
+        ImGui::EndDisabled();
+        ImGui::PopItemWidth();
+    }
+
+    // control settings
     ImGui::SeparatorText("Controls");
     ImGui::Text("Choose gamepad:");
     int joysticks = SDL_NumJoysticks();
@@ -431,13 +658,8 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
+    // networking settings
     ImGui::SeparatorText("Networking");
-
-    // placeholder values
-    static char udp_host[64] = "192.168.1.104";
-    static char udp_port[64] = "46188";
-    static char tcp_host[64] = "127.0.0.1";
-    static char tcp_port[64] = "4006";
 
     ImGui::BeginGroup();
 
@@ -452,7 +674,7 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Host:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_host_input", udp_host, 64);
+    ImGui::InputText("###udp_host_input", _host_udp, 64);
     ImGui::PopItemWidth();
 
     ImGui::TableNextRow();
@@ -460,56 +682,62 @@ void CZoomyClient::imgui_draw_settings() {
     ImGui::Text("UDP Port:");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###udp_port_input", udp_port, 64);
+    ImGui::InputText("###udp_port_input", _port_udp, 64);
     ImGui::PopItemWidth();
     ImGui::EndTable();
 
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Button("Connect to UDP")) {
-        _udp_host = udp_host;
-        _udp_port = udp_port;
+        _udp_host = _host_udp;
+        _udp_port = _port_udp;
         _udp_req_ready = true;
     }
     ImGui::PopItemWidth();
     ImGui::EndDisabled();
 
-    // draw udp conn details table
-    ImGui::BeginDisabled(_tcp_req_ready);
-    ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
-    ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
-    ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
+    // if use remote camera
+    if (_cam_location) {
+        // draw tcp conn details table
+        ImGui::BeginDisabled(_tcp_req_ready);
+        ImGui::BeginTable("##tcp_item_table", 2, ImGuiTableFlags_SizingFixedFit);
+        ImGui::TableSetupColumn("##tcp_item_title", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##tcp_item_value", ImGuiTableColumnFlags_WidthStretch);
 
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Host:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_host_input", tcp_host, 64);
-    ImGui::PopItemWidth();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("TCP Host:");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::InputText("###tcp_host_input", _host_tcp, 64);
+        ImGui::PopItemWidth();
 
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::Text("TCP Port:");
-    ImGui::TableSetColumnIndex(1);
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::InputText("###tcp_port_input", tcp_port, 64);
-    ImGui::PopItemWidth();
-    ImGui::EndTable();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("TCP Port:");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::InputText("###tcp_port_input", _port_tcp, 64);
+        ImGui::PopItemWidth();
+        ImGui::EndTable();
 
-    ImGui::PushItemWidth(-FLT_MIN);
-    if (ImGui::Button("Connect to TCP")) {
-        _tcp_host = tcp_host;
-        _tcp_port = tcp_port;
-        _tcp_req_ready = true;
+        ImGui::PushItemWidth(-FLT_MIN);
+        if (ImGui::Button("Connect to TCP")) {
+            _tcp_host = _host_tcp;
+            _tcp_port = _port_tcp;
+            _tcp_req_ready = true;
+        }
+        ImGui::PopItemWidth();
+        ImGui::EndDisabled();
     }
-    ImGui::PopItemWidth();
-    ImGui::EndDisabled();
     ImGui::EndGroup();
 
     // draw checkboxes for toggleable values
     ImGui::BeginGroup();
     ImGui::Checkbox("Use dashcam", &_use_dashcam);
     ImGui::Checkbox("Rotate dashcam 180", &_flip_image);
+    ImGui::Checkbox("Relative Motion", &_relation);
+    ImGui::Checkbox("Autonomous mode", &_use_auto);
+    ImGui::Checkbox("Demo mode", &_demo);
     ImGui::EndGroup();
 
     // TODO: determine maximum number of values to send and remove stringstream
@@ -625,7 +853,10 @@ void CZoomyClient::imgui_draw_arena() {
 
     if (ImGui::BeginMenuBar()) {
         ImGui::BeginDisabled(_arena_raw_img.empty());
-        ImGui::Checkbox("Overlay Mask", &_show_mask);
+        ImGui::Checkbox("Mask", &_show_mask);
+        ImGui::Checkbox("Waypoints", &_show_waypoints);
+        ImGui::Checkbox("Homography", &_show_homography);
+        ImGui::Checkbox("Preview", &_show_preview);
         ImGui::EndDisabled();
         ImGui::EndMenuBar();
     }
@@ -633,76 +864,161 @@ void CZoomyClient::imgui_draw_arena() {
     // copy out latest arena image
     if (_show_mask) {
         _mutex_mask_gen.lock();
-        _arena_img = _arena_mask_img;
+        _arena_img = _arena_mask_img.clone();
         _mutex_mask_gen.unlock();
+    } else if (_show_homography) {
+        _arena_img = _arena_warped_img.clone();
     } else {
-        _arena_img = _arena_raw_img;
+        _arena_img = _arena_raw_img.clone();
     }
 
-    float scaled_factor = 0.0f;
-    ImVec2 last_cursor_pos;
-    fit_texture_to_window(_arena_img, _arena_tex, scaled_factor, last_cursor_pos);
-    mat_to_tex(_arena_img, _arena_tex);
-    float coord_scale = ARENA_DIM / scaled_factor;
+    // fit arena texture to window size
+    fit_texture_to_window(_arena_img, _arena_tex, _arena_scale_factor, _arena_last_cursor_pos);
 
     if (ImGui::IsItemHovered()) {
-        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - last_cursor_pos.x) * coord_scale,
-                                        (ImGui::GetMousePos().y - last_cursor_pos.y) * coord_scale);
+        // get position of cursor relative to actual image size
+        ImVec2 arena_mouse_pos = ImVec2((ImGui::GetMousePos().x - _arena_last_cursor_pos.x) * _coord_scale,
+                                        (ImGui::GetMousePos().y - _arena_last_cursor_pos.y) * _coord_scale);
         _arena_mouse_pos.x =
                 arena_mouse_pos.x < 0 ? 0 : arena_mouse_pos.x > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.x;
         _arena_mouse_pos.y =
                 arena_mouse_pos.y < 0 ? 0 : arena_mouse_pos.y > ARENA_DIM ? ARENA_DIM : arena_mouse_pos.y;
-//        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), 15,
-//                                                    ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)));
-    }
 
-    // plot waypoints in ImGui instead of OpenCV
-    int wp = 0; // keep track of which waypoint plotted
-    ImGui::GetWindowDrawList()->ChannelsSplit(2);
-    for (auto &i: _waypoints) {
-        ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
+        // only configure homography when unchecked
+        if (!_show_homography) {
+            // implement drag to reshape quad without having to be directly over corner
+            static bool dragging = false;
+            static ImVec2 drag_start_pos(0,0);
+            static ImVec2 last_qp_pos(0,0);
+            static int point_that_matters;  // ignore other points even when they become closer
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                if (!dragging) {
+                    dragging = true;
+                    point_that_matters = _closest_quad_point;
+                    drag_start_pos = _arena_mouse_pos;
+                    last_qp_pos = _quad_points.at(point_that_matters);
+                }
+                _quad_points.at(point_that_matters) = ImVec2(last_qp_pos.x + (_arena_mouse_pos.x - drag_start_pos.x),
+                                                            last_qp_pos.y + (_arena_mouse_pos.y - drag_start_pos.y));
+            } else {
+                dragging = false;
+            }
 
-        // modify waypoint coords to fit on image
-        ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / coord_scale) + last_cursor_pos.x,
-                               ((float) i.coordinates.y / coord_scale) + last_cursor_pos.y);
-
-        // plot the waypoint
-        ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
-                ImVec4(1.0f, 1.0f, 0.4f, 1.0f));
-        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, wp_colour);
-
-        // draw waypoint index on top of waypoint
-        ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
-                                            ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
-                                                   pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
-                                            std::to_string(wp).c_str());
-
-        // draw connecting line
-        ImGui::GetWindowDrawList()->ChannelsSetCurrent(0);
-        if (wp) {   // if not the first waypoints
-            auto last = std::prev(&i);  // get last waypoint
-            // modify waypoint coords to fit on image
-            ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / coord_scale) + last_cursor_pos.x,
-                                        ((float) last->coordinates.y / coord_scale) + last_cursor_pos.y);
-            // draw line from prev waypoint to current waypoint
-            // maybe add arrow to line
-            // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
-            ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
+            // convert imgui quad coords to opencv coords for imgproc
+            _homography_corners = {
+                    cv::Point((int) _quad_points.at(0).x,(int) _quad_points.at(0).y),
+                    cv::Point((int) _quad_points.at(1).x,(int) _quad_points.at(1).y),
+                    cv::Point((int) _quad_points.at(2).x,(int) _quad_points.at(2).y),
+                    cv::Point((int) _quad_points.at(3).x,(int) _quad_points.at(3).y),
+            };
         }
-        wp++;
     }
 
+    // show homography config if not currently using homography
+    if (!_show_homography) {
+        // draw the quad
+        ImGui::GetWindowDrawList()->AddQuad(
+                _quad_points_scaled.at(0),
+                _quad_points_scaled.at(1),
+                _quad_points_scaled.at(2),
+                _quad_points_scaled.at(3),
+                ImColor(ImVec4(0.0f,1.0f,0.0f,1.0f)),
+                3
+        );
+
+// add circles for clarity
+//        for (auto &i : _quad_points_scaled) {
+//            ImGui::GetWindowDrawList()->AddCircleFilled(i, 5, ImColor(ImVec4(0.0f,1.0f,0.0f,1.0f)));
+//        }
+
+
+        if (!_auto && _show_preview) {
+            // minimap for homography preview
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+            ImVec2 window_pos = _arena_last_cursor_pos;
+            ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, ImVec2(0.0f,0.0f));
+            window_flags |= ImGuiWindowFlags_NoMove;
+            ImGui::SetNextWindowBgAlpha(0.35f);
+            cv::Mat copied = _arena_warped_img.clone();
+            mat_to_tex(copied, _preview_tex);
+            copied.release();
+            if (ImGui::Begin("Homography preview", nullptr, window_flags)) {
+                ImGui::Image((ImTextureID) (intptr_t) _preview_tex, ImVec2(ARENA_DIM / 10.0f, ARENA_DIM / 10.0f));
+                ImGui::End();
+            }
+            ImGui::SetNextWindowBgAlpha(1.0f);
+        }
+    }
+
+    if (_show_waypoints) {
+        // plot waypoints in ImGui instead of OpenCV
+        int wp = 0; // keep track of which waypoint plotted
+        ImGui::GetWindowDrawList()->ChannelsSplit(2);
+        for (auto &i: _waypoints) {
+            ImGui::GetWindowDrawList()->ChannelsSetCurrent(1);
+
+            // modify waypoint coords to fit on image
+            ImVec2 pt_ctr = ImVec2(((float) i.coordinates.x / _coord_scale) + _arena_last_cursor_pos.x,
+                                   ((float) i.coordinates.y / _coord_scale) + _arena_last_cursor_pos.y);
+
+            // plot the waypoint
+            ImColor wp_colour = wp == _wp_highlighted ? ImColor(ImVec4(1.0f, 0.5f, 0.0f, 1.0f)) : ImColor(
+                    ImVec4(1.0f, 1.0f, 0.4f, 1.0f));
+            ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, wp_colour);
+
+            // draw waypoint index on top of waypoint
+            ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                                                ImVec2(pt_ctr.x - (ImGui::GetFontSize() / 4),
+                                                       pt_ctr.y - (ImGui::GetFontSize() / 2)), IM_COL32_BLACK,
+                                                std::to_string(wp).c_str());
+
+            // draw connecting line
+            ImGui::GetWindowDrawList()->ChannelsSetCurrent(0);
+            if (wp) {   // if not the first waypoints
+                auto last = std::prev(&i);  // get last waypoint
+                // modify waypoint coords to fit on image
+                ImVec2 last_pt_ctr = ImVec2(((float) last->coordinates.x / _coord_scale) + _arena_last_cursor_pos.x,
+                                            ((float) last->coordinates.y / _coord_scale) + _arena_last_cursor_pos.y);
+                // draw line from prev waypoint to current waypoint
+                // maybe add arrow to line
+                // ImGui::GetWindowDrawList()->AddNgonFilled(ImVec2(((pt_ctr.x - last_pt_ctr.x) / 2) + last_pt_ctr.x,((pt_ctr.y - last_pt_ctr.y) / 2) + last_pt_ctr.y), 10, wp_colour, 3);
+                ImGui::GetWindowDrawList()->AddLine(last_pt_ctr, pt_ctr, ImColor(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), 3);
+            }
+            wp++;
+        }
+    }
+
+    // show auto points in imgui
+    if (_auto) {
+        // show car position
+        ImVec2 pt_ctr = ImVec2(((float) _last_car_pos.x / _coord_scale) + _arena_last_cursor_pos.x,
+                               ((float) _last_car_pos.y / _coord_scale) + _arena_last_cursor_pos.y);
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
+                ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
+        // show next point
+        pt_ctr = ImVec2(((float) _autonomous.get_destination().x / _coord_scale) + _arena_last_cursor_pos.x,
+                        ((float) _autonomous.get_destination().y / _coord_scale) + _arena_last_cursor_pos.y);
+        ImGui::GetWindowDrawList()->AddCircleFilled(pt_ctr, 10, ImColor(
+                ImVec4(0.0f, 0.0f, 1.0f, 1.0f)));
+    }
     ImGui::End();
 }
 
 void CZoomyClient::imgui_draw_debug() {
     // imgui window (for debug)
-    ImGui::Begin("ImGui", nullptr);
-    ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
+    ImGui::Begin("Debug", nullptr);
     ImGui::Text("Arena mouse position: %d %d", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
-    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
-    ImGui::SeparatorText("OpenCV Build Information");
-    ImGui::Text("%s", cv::getBuildInformation().c_str());
+    // print mouse location info
+    ImGui::Text("(%d, %d)", (int) _arena_mouse_pos.x, (int) _arena_mouse_pos.y);
+    ImGui::Text("dp1, dp2, dp3, dp4: %.2f, %.2f, %.2f, %.2f",
+                _dist_quad_points.at(0),
+                _dist_quad_points.at(1),
+                _dist_quad_points.at(2),
+                _dist_quad_points.at(3));
+    ImGui::Text("Closest to: %d", _closest_quad_point + 1);
+//    ImGui::Text("Viewport %f %f", ImGui::GetMainViewport()->Size.x, ImGui::GetMainViewport()->Size.y);
+//    ImGui::SeparatorText("OpenCV Build Information");
+//    ImGui::Text("%s", cv::getBuildInformation().c_str());
     ImGui::ShowDemoWindow();
 
     ImGui::End();

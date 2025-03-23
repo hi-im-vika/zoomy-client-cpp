@@ -6,9 +6,11 @@
 
 #pragma once
 
+#include <cmath>
+
 #include <SDL2/SDL.h>
 #include <imgui.h>
-#include <cmath>
+
 #include "CWindow.hpp"
 
 struct WindowSize {

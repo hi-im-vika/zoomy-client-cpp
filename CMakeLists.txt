@@ -35,8 +35,8 @@ add_executable(zoomy-client
 )
 
 if (WIN32)
-    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-net ws2_32 -lmingw32 -mwindows)
+    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui nlohmann_json::nlohmann_json spdlog::spdlog SDL2::SDL2 vika-net ws2_32 -lmingw32 -mwindows)
     add_definitions(-DSDL_MAIN_HANDLED)
 else ()
-    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui spdlog::spdlog SDL2::SDL2 vika-net)
+    target_link_libraries(zoomy-client ${OpenCV_LIBS} ${OPENGL_LIBRARY} imgui nlohmann_json::nlohmann_json spdlog::spdlog SDL2::SDL2 vika-net)
 endif ()
