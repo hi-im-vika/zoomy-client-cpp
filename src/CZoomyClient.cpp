@@ -278,6 +278,13 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     // start tcp update thread
     _thread_update_tcp = std::thread(thread_update_tcp, this);
     _thread_update_tcp.detach();
+
+    // initialize options
+    _show_homography = false;
+    _show_mask = false;
+    _show_preview = false;
+    _show_waypoints = false;
+    _use_local = false;
 }
 
 CZoomyClient::~CZoomyClient() {
