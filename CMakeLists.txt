@@ -42,7 +42,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
 find_package(SDL2 REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL2::SDL2)
 
-#find_package(nlohmann_json CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 if (WIN32)
