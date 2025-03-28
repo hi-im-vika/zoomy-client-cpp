@@ -12,12 +12,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 set(OpenGL_GL_PREFERENCE LEGACY)
 
-set(OpenCV_STATIC ON)
-find_package(OpenCV REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(spdlog REQUIRED)
-
 add_definitions(-DWINDOW_NAME="${CMAKE_PROJECT_NAME}")
 
 add_executable(zoomy-client
