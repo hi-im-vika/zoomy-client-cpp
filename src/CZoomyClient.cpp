@@ -18,7 +18,6 @@
 //#define TCP_DELAY 15 // only if over ssh forwarding
 
 CZoomyClient::CZoomyClient(cv::Size s) {
-    _window_size = s;
     _angle = 0;
     _deltaTime = std::chrono::steady_clock::now();
     _demo = true;
@@ -61,7 +60,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-    _window = std::make_unique<CWindow>(WINDOW_NAME, _window_size.width, _window_size.height);
+    _window = std::make_unique<CWindow>(WINDOW_NAME, s.width, s.height);
     if (_window == nullptr) {
         spdlog::error("Error creating window");
         exit(-1);

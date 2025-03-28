@@ -9,7 +9,6 @@ add_definitions(-DWINDOW_NAME="${CMAKE_PROJECT_NAME}")
 
 add_executable(zoomy-client
         src/CZoomyClient.cpp
-        src/CCommonBase.cpp
         src/CWindow.cpp
         src/CDPIHandler.cpp
         src/CAutoController.cpp

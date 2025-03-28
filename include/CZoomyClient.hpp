@@ -26,9 +26,8 @@
 
 #include <CUDPClient.hpp>
 #include <CTCPClient.hpp>
-
+#include <CBase.hpp>
 #include "CWindow.hpp"
-#include "CCommonBase.hpp"
 #include "CDPIHandler.hpp"
 #include "CAutoController.hpp"
 
@@ -45,7 +44,7 @@ enum value_type {
     GC_Y,
 };
 
-class CZoomyClient : public CCommonBase {
+class CZoomyClient : public CBase {
 private:
     // imgui
     std::unique_ptr<CWindow> _window;
