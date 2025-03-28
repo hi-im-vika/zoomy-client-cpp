@@ -30,7 +30,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE vika-net)
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui::imgui)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
 
 find_package(OpenGL REQUIRED)
@@ -38,9 +38,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OpenGL::GL)
 
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
-
-find_package(SDL2 REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL2::SDL2)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)

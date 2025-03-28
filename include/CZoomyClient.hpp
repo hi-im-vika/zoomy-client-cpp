@@ -13,15 +13,15 @@
 
 #include <nlohmann/json.hpp>
 #include <imgui.h>
-#include <backends/imgui_impl_sdl2.h>
-#include <backends/imgui_impl_opengl3.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_opengl3.h>
 #include <spdlog/spdlog.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <SDL_opengles2.h>
+#include <SDL3/SDL_opengles2.h>
 #else
-#include <SDL_opengl.h>
+#include <SDL3/SDL_opengl.h>
 #endif
 
 #include <CUDPClient.hpp>
@@ -76,7 +76,7 @@ private:
     unsigned int _step;
     std::vector<int> _values;
     std::vector<cv::Point> _joystick;
-    SDL_GameController *_gc;
+    SDL_Gamepad *_gc;
     bool _auto, _relation;
     std::string _xml_vals;
     std::vector <CAutoController::waypoint> _waypoints;

@@ -25,10 +25,10 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     _autospeed = 164;
 
     // SDL init
-    uint init_flags = SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
+    uint init_flags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD;
 
-    if (SDL_Init(init_flags) != 0) {
-        spdlog::error("Error during SDL init");
+    if (!SDL_Init(init_flags)) {
+        spdlog::error("Error: SDL_Init(): {}", SDL_GetError());
         exit(-1);
     }
 
@@ -87,7 +87,7 @@ CZoomyClient::CZoomyClient(cv::Size s) {
     CDPIHandler::set_global_font_scaling(&io);
 
     // rendering init
-    ImGui_ImplSDL2_InitForOpenGL(_window->get_native_window(), _window->get_native_context());
+    ImGui_ImplSDL3_InitForOpenGL(_window->get_native_window(), _window->get_native_context());
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // OpenCV init
@@ -480,30 +480,30 @@ void CZoomyClient::draw() {
     _deltaTime = std::chrono::steady_clock::now();
     // handle all events
     while (SDL_PollEvent(&_evt)) {
-        ImGui_ImplSDL2_ProcessEvent(&_evt);
+        ImGui_ImplSDL3_ProcessEvent(&_evt);
         switch (_evt.type) {
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 spdlog::info("Quit");
                 _do_exit = true;
                 break;
-            case SDL_CONTROLLERDEVICEADDED:
+            case SDL_EVENT_GAMEPAD_ADDED:
                 spdlog::info("GC added");
                 break;
-            case SDL_CONTROLLERDEVICEREMOVED:
+            case SDL_EVENT_GAMEPAD_REMOVED:
                 spdlog::info("GC removed");
                 break;
-            case SDL_CONTROLLERBUTTONDOWN:
-            case SDL_CONTROLLERBUTTONUP:
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            case SDL_EVENT_GAMEPAD_BUTTON_UP:
                 //_values.at(value_type::GC_A) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_A);
                 //_values.at(value_type::GC_B) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_B);
                 //_values.at(value_type::GC_X) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_X);
                 //_values.at(value_type::GC_Y) = SDL_GameControllerGetButton(_gc, SDL_CONTROLLER_BUTTON_Y);
                 break;
-            case SDL_CONTROLLERAXISMOTION:
-                _joystick[0].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTX);
-                _joystick[0].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_LEFTY);
-                _joystick[1].x = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
-                _joystick[1].y = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTY);
+            case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+                _joystick[0].x = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_LEFTX);
+                _joystick[0].y = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_LEFTY);
+                _joystick[1].x = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_RIGHTX);
+                _joystick[1].y = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_RIGHTY);
 
                 if (hypot(_joystick[0].x, _joystick[0].y) > DEADZONE) {
                     if (_demo) {
@@ -540,14 +540,14 @@ void CZoomyClient::draw() {
                     _values.at(value_type::GC_RIGHTX) = _autonomous.getAutoInput(CAutoController::ROTATE);
                     _values.at(value_type::GC_RIGHTY) = 0;
                 } else if (!_relation) {
-                    _values.at(value_type::GC_RIGHTX) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_RIGHTX);
+                    _values.at(value_type::GC_RIGHTX) = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_RIGHTX);
                     _values.at(value_type::GC_RIGHTY) = 0;
                 } else {
                     _values.at(value_type::GC_RIGHTX) = 0;
                     _values.at(value_type::GC_RIGHTY) = 0;
                 }
 
-                _values.at(value_type::GC_RTRIG) = SDL_GameControllerGetAxis(_gc, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+                _values.at(value_type::GC_RTRIG) = SDL_GetGamepadAxis(_gc, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
                 if (!_auto) {
                     _values.at(value_type::GC_LTRIG) = _angle;
                 }
@@ -562,7 +562,7 @@ void CZoomyClient::draw() {
 
     ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     ImGui::DockSpaceOverViewport();
@@ -622,33 +622,34 @@ void CZoomyClient::imgui_draw_settings() {
     // control settings
     ImGui::SeparatorText("Controls");
     ImGui::Text("Choose gamepad:");
-    int joysticks = SDL_NumJoysticks();
+    int num_joysticks;
+    SDL_JoystickID* joysticks = SDL_GetGamepads(&num_joysticks);
     std::vector<std::string> joystick_names;
 
     // if joysticks are connected
     if (joysticks) {
         // get all joystick names
-        for (int i = 0; i < joysticks; i++) {
-            joystick_names.emplace_back(SDL_GameControllerNameForIndex(i));
+        for (int i = 0; i < num_joysticks; i++) {
+            joystick_names.emplace_back(SDL_GetGamepadNameForID(joysticks[i]));
         }
         // if no gc assigned already, assign first one
-        if (!_gc) _gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(0));
+        if (!_gc) _gc = SDL_GetGamepadFromID(joysticks[0]);
     } else {
         // if nothing connected, set gc to nullptr
         _gc = nullptr;
     }
 
     int item_selected_idx = 0;
-    std::string combo_preview_value = joysticks ? SDL_GameControllerName(_gc) : "No gamepads connected";
+    std::string combo_preview_value = num_joysticks ? SDL_GetGamepadName(_gc) : "No gamepads connected";
 
     ImGui::BeginDisabled(!joysticks);
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::BeginCombo("##gpselect", combo_preview_value.c_str())) {
-        for (int i = 0; i < joysticks; i++) {
+        for (int i = 0; i < num_joysticks; i++) {
             const bool is_selected = (item_selected_idx == i);
-            if (ImGui::Selectable(SDL_GameControllerNameForIndex(i), is_selected)) {
+            if (ImGui::Selectable(SDL_GetGamepadNameForID(joysticks[i]), is_selected)) {
                 item_selected_idx = i;
-                _gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(i));
+                _gc = SDL_GetGamepadFromID(joysticks[i]);
             }
             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
             if (is_selected) ImGui::SetItemDefaultFocus();
