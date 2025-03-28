@@ -22,15 +22,10 @@ add_definitions(-DWINDOW_NAME="${CMAKE_PROJECT_NAME}")
 
 add_executable(zoomy-client
         src/CZoomyClient.cpp
-        include/CZoomyClient.hpp
         src/CCommonBase.cpp
-        include/CCommonBase.hpp
         src/CWindow.cpp
-        include/CWindow.hpp
         src/CDPIHandler.cpp
-        include/CDPIHandler.hpp
         src/CAutoController.cpp
-        include/CAutoController.hpp
 )
 
 add_subdirectory(vendor)
