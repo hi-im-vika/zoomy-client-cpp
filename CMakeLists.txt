@@ -16,7 +16,7 @@ add_executable(zoomy-client
 )
 
 add_subdirectory(vendor)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE vika-net)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE cppbase vika-net)
 
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui::imgui)
